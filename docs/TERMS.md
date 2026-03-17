@@ -64,6 +64,10 @@
 - 滥用服务
 - 法律法规要求
 
+## 管辖法律
+
+本服务条款受美国法律管辖，任何相关争议将在美国法院解决。
+
 ## 联系方式
 
-如有疑问，请通过 GitHub Issues 联系。
+如有疑问，请通过 <a href="https://github.com/epheiamoe/2345.desuwa.org/issues" target="_blank">GitHub Issues</a> 联系。
