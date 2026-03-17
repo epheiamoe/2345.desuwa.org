@@ -545,7 +545,8 @@
       "url": "https://zhuanlan.zhihu.com/",
       "tags": [
         "知识库"
-      ]
+      ],
+      "no_follow": true
     },
     {
       "domain": "movie.douban.com",
@@ -553,7 +554,8 @@
       "url": "https://movie.douban.com/",
       "tags": [
         "影视"
-      ]
+      ],
+      "no_follow": true
     },
     {
       "domain": "www.bilibili.com",
@@ -561,7 +563,66 @@
       "url": "https://www.bilibili.com/",
       "tags": [
         "影视"
-      ]
+      ],
+      "no_follow": true
+    },
+    {
+      "domain": "twitter.com",
+      "name": "Twitter",
+      "url": "https://twitter.com/",
+      "tags": [
+        "社区"
+      ],
+      "no_follow": true
+    },
+    {
+      "domain": "mastodon.social",
+      "name": "Mastodon",
+      "url": "https://mastodon.social/",
+      "tags": [
+        "社区"
+      ],
+      "no_follow": true
+    },
+    {
+      "domain": "open.weixin.qq.com",
+      "name": "微信公众号",
+      "url": "https://open.weixin.qq.com/",
+      "tags": [
+        "社区"
+      ],
+      "no_follow": true
+    },
+    {
+      "domain": "store.steampowered.com",
+      "name": "Steam 游戏",
+      "url": "https://store.steampowered.com/",
+      "tags": [
+        "游戏"
+      ],
+      "no_follow": true
     }
+  ],
+  "direct_urls": [
+    {"url": "https://store.steampowered.com/app/504230", "title": "Celeste", "tags": ["游戏"]},
+    {"url": "https://store.steampowered.com/app/917680", "title": "one night, hot springs", "tags": ["游戏"]},
+    {"url": "https://store.steampowered.com/app/1041920", "title": "If Found...", "tags": ["游戏"]},
+    {"url": "https://store.steampowered.com/app/1688580", "title": "A YEAR OF SPRINGS", "tags": ["游戏"]},
+    {"url": "https://store.steampowered.com/app/1345740", "title": "恋爱绮谭～不存在的夏天～", "tags": ["游戏"]},
+    {"url": "https://store.steampowered.com/app/1777430", "title": "恋爱绮谭～不存在的真相～", "tags": ["游戏"]},
+    {"url": "https://movie.douban.com/subject/35465019/", "title": "晓迪", "tags": ["影视"]},
+    {"url": "https://movie.douban.com/subject/26954005/", "title": "有性无别", "tags": ["影视"]},
+    {"url": "https://www.bilibili.com/video/BV1Dx411b7wU/", "title": "逃离", "tags": ["影视"]},
+    {"url": "https://twitter.com/MtFwiki", "title": "@MtFwiki", "tags": ["MtF", "社区"]},
+    {"url": "https://twitter.com/FtMwiki", "title": "@FtMwiki", "tags": ["FtM", "社区"]},
+    {"url": "https://mastodon.social/@MtFwiki", "title": "@MtFwiki@mastodon.social", "tags": ["MtF", "社区"]},
+    {"url": "https://mastodon.social/@FtMwiki", "title": "@FtMwiki@mastodon.social", "tags": ["FtM", "社区"]},
+    {"url": "https://docs.hrt.guide/", "title": "Shizu's 跨性别女性 HRT 资料兼指南", "tags": ["HRT", "MtF", "指南"]},
+    {"url": "https://kasuganoharuku.github.io/MtF-Certificate/", "title": "MtF Certificate", "tags": ["HRT", "MtF"]},
+    {"url": "https://github.com/lydlid/estrogel-diy-guide-zh_CN", "title": "雌二醇凝胶自制教程", "tags": ["HRT", "MtF", "指南"]},
+    {"url": "https://transky.mtf.wiki/", "title": "药娘的天空", "tags": ["小说", "MtF"]},
+    {"url": "https://transchinese.org/projects", "title": "变身文学与性转小说存档", "tags": ["小说"]},
+    {"url": "https://en.wikipedia.org/wiki/Veneno_%28TV_series%29", "title": "Veneno", "tags": ["影视"]},
+    {"url": "https://project-trans.org/SOC-8/", "title": "跨性别和多元性别人群健康照护指南第八版", "tags": ["指南"]}
   ]
 }

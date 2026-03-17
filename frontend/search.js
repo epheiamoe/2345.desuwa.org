@@ -51,9 +51,4 @@ function toggleTheme() {
 document.addEventListener('DOMContentLoaded', function() {
     initTheme();
     detectUserLanguage();
-    
-    var themeBtn = document.getElementById('theme-toggle');
-    if (themeBtn) {
-        themeBtn.addEventListener('click', toggleTheme);
-    }
 });

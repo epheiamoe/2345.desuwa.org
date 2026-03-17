@@ -16,8 +16,9 @@ from transspider.config import load_domains, get_random_user_agent, PROJECT_ROOT
 
 
 def load_domain_tags():
-    """从 domains.json 加载域名对应的标签"""
+    """从 domains.json 加载域名对应的标签和属性"""
     tags_map = {}
+    no_follow_domains = set()
     domains_json = os.path.join(PROJECT_ROOT, "domains.json")
     if os.path.exists(domains_json):
         with open(domains_json, encoding="utf-8") as f:
@@ -27,7 +28,9 @@ def load_domain_tags():
                 tags = item.get("tags", [])
                 if domain:
                     tags_map[domain] = tags
-    return tags_map
+                if item.get("no_follow", False):
+                    no_follow_domains.add(domain)
+    return tags_map, no_follow_domains
 
 
 class TransSpider(scrapy.Spider):
@@ -45,8 +48,8 @@ class TransSpider(scrapy.Spider):
 
     name = "trans"
     allowed_domains = load_domains()
+    domain_tags, no_follow_domains = load_domain_tags()
     start_urls = [f"https://{domain}/" for domain in allowed_domains]
-    domain_tags = load_domain_tags()  # 加载域名标签映射
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -100,8 +103,8 @@ class TransSpider(scrapy.Spider):
         # 返回 item 用于 Pipeline 处理
         yield item
 
-        # 提取更多链接
-        if self.page_count < self.max_pages:
+        # 提取更多链接（如果当前域名不在 no_follow 列表中）
+        if domain not in self.no_follow_domains and self.page_count < self.max_pages:
             # 从页面中提取链接
             links = response.css("a::attr(href)").getall()
 

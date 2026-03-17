@@ -192,7 +192,7 @@ if ($query) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2345.desuwa.org - 跨性别资源搜索</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
     <div class="header">
@@ -202,7 +202,7 @@ if ($query) {
             <a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank" style="color:#1a73e8;">⭐ 开源</a>
             <a href="/api/console.html" target="_blank">API 控制台</a>
             <a href="/docs/api.html" target="_blank">API 文档</a>
-            <a href="javascript:void(0)" id="theme-toggle" title="切换主题">🌙</a>
+            <a href="javascript:toggleTheme()" id="theme-toggle" title="切换主题">🌙</a>
         </div>
     </div>
     
@@ -427,6 +427,6 @@ if ($query) {
             </p>
         </div>
     </div>
-    <script src="search.js"></script>
+    <script src="search.js?v=2"></script>
 </body>
 </html>
