@@ -41,10 +41,10 @@ ENV/
 Thumbs.db
 
 # 项目特定
-2345-lgbt-repo/     # 克隆的仓库，独立管理
-domains.txt         # 包含所有链接
-*.json              # 爬取数据
-httpcache/          # 爬虫缓存
+# 2345-lgbt-repo/  # 克隆的仓库，独立管理，不要提交
+domains.txt        # 包含所有链接
+*.json             # 爬取数据
+httpcache/         # 爬虫缓存
 
 # Docker
 .docker/
@@ -52,3 +52,6 @@ httpcache/          # 爬虫缓存
 # 临时文件
 *.tmp
 temp/
+
+# 搜索测试数据
+temp_docs.json
