@@ -19,6 +19,15 @@ $MEILISEARCH_INDEX = 'trans_resources';
 // 可用标签列表（从 domains.json 加载）
 $availableTags = ['MtF', 'FtM', '社区', '性', '知识库', 'HRT', '指南', '报告', '学术', '影视', '音乐', '游戏', '小说', '法律', '医疗'];
 
+// 可用语言列表
+$availableLanguages = [
+    'zh' => '中文',
+    'en' => 'English',
+    'ja' => '日本語',
+    'es' => 'Español',
+    'nl' => 'Nederlands',
+];
+
 // 获取索引总数
 $statsUrl = "http://{$MEILISEARCH_HOST}:{$MEILISEARCH_PORT}/indexes/{$MEILISEARCH_INDEX}/stats";
 $statsJson = @file_get_contents($statsUrl);
@@ -46,6 +55,9 @@ if (isset($_GET['tags'])) {
 
 // 处理站点筛选
 $selectedSite = isset($_GET['site']) ? trim($_GET['site']) : '';
+
+// 处理语言筛选
+$selectedLang = isset($_GET['lang']) ? trim($_GET['lang']) : '';
 $limit = 10; // 每页显示 10 条
 $offset = ($page - 1) * $limit;
 $results = [];
@@ -108,6 +120,13 @@ if ($query) {
             $existingFilter = $searchParams['filter'] ?? '';
             $siteFilter = "domain = '{$selectedSite}'";
             $searchParams['filter'] = $existingFilter ? "({$existingFilter}) AND {$siteFilter}" : $siteFilter;
+        }
+        
+        // 添加语言筛选
+        if (!empty($selectedLang)) {
+            $existingFilter = $searchParams['filter'] ?? '';
+            $langFilter = "language = '{$selectedLang}'";
+            $searchParams['filter'] = $existingFilter ? "({$existingFilter}) AND {$langFilter}" : $langFilter;
         }
         
         $postData = json_encode($searchParams);
@@ -182,6 +201,22 @@ if ($query) {
                     </label>
                 <?php endforeach; ?>
             </div>
+            
+            <!-- 语言筛选 -->
+            <div class="tag-filter" style="margin-top:10px;">
+                <span style="color:#666;font-size:13px;margin-right:10px;">语言：</span>
+                <?php foreach ($availableLanguages as $langCode => $langName): ?>
+                    <label>
+                        <input type="radio" name="lang" value="<?php echo htmlspecialchars($langCode); ?>"
+                            <?php echo $selectedLang === $langCode ? 'checked' : ''; ?>>
+                        <span><?php echo htmlspecialchars($langName); ?></span>
+                    </label>
+                <?php endforeach; ?>
+                <label>
+                    <input type="radio" name="lang" value="" <?php echo $selectedLang === '' ? 'checked' : ''; ?>>
+                    <span>全部</span>
+                </label>
+            </div>
         </div>
         
         <?php if ($error): ?>
@@ -214,8 +249,9 @@ if ($query) {
                     $i++;
                     $show = $i <= 5;
                     $style = $show ? '' : 'display:none;';
+                    $langParam = $selectedLang ? '&lang=' . urlencode($selectedLang) : '';
                 ?>
-                    <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?>&site=<?php echo urlencode($domain); ?>" 
+                    <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?><?php echo $langParam; ?>&site=<?php echo urlencode($domain); ?>" 
                        class="domain-link" style="<?php echo $style; ?>"
                        title="只看 <?php echo htmlspecialchars($domain); ?>">
                         <?php echo htmlspecialchars($domain); ?> (<?php echo $domainCounts[$domain]; ?>)
@@ -296,6 +332,9 @@ if ($query) {
                     $baseParams = 'q=' . urlencode($query);
                     foreach ($selectedTags as $tag) {
                         $baseParams .= '&tags[]=' . urlencode($tag);
+                    }
+                    if ($selectedLang) {
+                        $baseParams .= '&lang=' . urlencode($selectedLang);
                     }
                 ?>
                 <div class="pagination">
