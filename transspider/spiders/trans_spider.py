@@ -12,7 +12,12 @@ import os
 import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from transspider.config import load_domains, get_random_user_agent, PROJECT_ROOT
+from transspider.config import (
+    load_domains,
+    load_start_urls,
+    get_random_user_agent,
+    PROJECT_ROOT,
+)
 
 
 def load_domain_tags():
@@ -47,9 +52,9 @@ class TransSpider(scrapy.Spider):
     """
 
     name = "trans"
-    allowed_domains = load_domains()
+    allowed_domains = load_domains()  # 域名列表用于过滤
     domain_tags, no_follow_domains = load_domain_tags()
-    start_urls = [f"https://{domain}/" for domain in allowed_domains]
+    start_urls = load_start_urls()  # 起始 URL 列表
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

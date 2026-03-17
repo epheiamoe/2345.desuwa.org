@@ -5,15 +5,13 @@ Scrapy 跨性别资源爬虫
 """
 
 import os
+import json
 
 # 项目根目录（自动检测）
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 域名列表文件 - 使用相对于项目根目录的路径
-# 先尝试 domains_test.txt（测试用），如果没有则使用 domains.txt
-DOMAINS_FILE = os.path.join(PROJECT_ROOT, "domains_test.txt")
-if not os.path.exists(DOMAINS_FILE):
-    DOMAINS_FILE = os.path.join(PROJECT_ROOT, "domains.txt")
+# 域名列表 - 优先使用 domains.json
+DOMAINS_JSON = os.path.join(PROJECT_ROOT, "domains.json")
 
 # Meilisearch 配置
 MEILISEARCH_HOST = "localhost"
@@ -35,18 +33,32 @@ USER_AGENTS = [
 ]
 
 import random
-import os
 
 
 def load_domains():
-    """从文件加载域名列表"""
+    """从 domains.json 加载域名列表（用于 allowed_domains 过滤）"""
     domains = []
-    with open(DOMAINS_FILE, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#"):
-                domains.append(line)
+    if os.path.exists(DOMAINS_JSON):
+        with open(DOMAINS_JSON, encoding="utf-8") as f:
+            data = json.load(f)
+            for item in data.get("domains", []):
+                domain = item.get("domain", "")
+                if domain:
+                    domains.append(domain)
     return domains
+
+
+def load_start_urls():
+    """从 domains.json 加载起始 URL 列表"""
+    urls = []
+    if os.path.exists(DOMAINS_JSON):
+        with open(DOMAINS_JSON, encoding="utf-8") as f:
+            data = json.load(f)
+            for item in data.get("domains", []):
+                url = item.get("url", "")
+                if url:
+                    urls.append(url)
+    return urls
 
 
 def get_random_user_agent():
