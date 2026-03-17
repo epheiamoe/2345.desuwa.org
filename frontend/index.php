@@ -19,6 +19,15 @@ $MEILISEARCH_INDEX = 'trans_resources';
 // 可用标签列表（从 domains.json 加载）
 $availableTags = ['MtF', 'FtM', '社区', '性', '知识库', 'HRT', '指南', '报告', '学术', '影视', '音乐', '游戏', '小说', '法律', '医疗'];
 
+// 获取索引总数
+$statsUrl = "http://{$MEILISEARCH_HOST}:{$MEILISEARCH_PORT}/indexes/{$MEILISEARCH_INDEX}/stats";
+$statsJson = @file_get_contents($statsUrl);
+$totalDocs = 0;
+if ($statsJson) {
+    $stats = json_decode($statsJson, true);
+    $totalDocs = $stats['numberOfDocuments'] ?? 0;
+}
+
 // 获取搜索关键词（改用 GET 方法）
 $query = isset($_GET['q']) ? trim($_GET['q']) : '';
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
@@ -411,6 +420,10 @@ if ($query) {
                 <input type="hidden" name="tags" id="tags-input" value="<?php echo htmlspecialchars(implode(',', $selectedTags)); ?>">
                 <button type="submit" class="search-btn">搜索</button>
             </form>
+            
+            <?php if (!$query): ?>
+            <p style="margin-top:15px;color:#666;font-size:14px;">共收录 <?php echo number_format($totalDocs); ?> 条跨性别资源</p>
+            <?php endif; ?>
             
             <!-- 标签筛选 -->
             <div class="tag-filter">

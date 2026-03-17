@@ -14,187 +14,184 @@
 
 - 🔍 专注：只收录 2345.lgbt 导航站的可靠资源
 - 🏠 自托管：任何人可以自己部署使用
-- 🏷️ 标签筛选：支持按 MtF、FtM、HRT 等标签筛选
+- 🏷️ 标签筛选：支持按 MtF，FtM、HRT 等标签筛选
 - 🚀 简单高效：PHP + Meilisearch + Scrapy
 
 ### 技术栈
 
 - **爬虫**: Python + Scrapy
 - **搜索引擎**: Meilisearch (Docker)
-- **前端**: 纯 PHP + Bootstrap 风格
-- **部署**: 宝塔面板 + Nginx
+- **前端**: 纯 PHP
 
-## 项目结构
+### 数据来源
 
-```
-2345.desuwa.org/
-├── 2345-lgbt-repo/          # 2345.LGBT 仓库（克隆）
-├── domains.txt              # 完整域名列表（105个）
-├── domains_test.txt         # 测试用域名列表（3个）
-├── docker-compose.yml       # Meilisearch Docker 配置
-├── extract_domains.py       # 域名提取脚本
-├── start.sh                 # 本地启动脚本
-├── transspider/             # Scrapy 爬虫项目
-│   ├── config.py            # 配置文件
-│   ├── items.py             # 数据模型
-│   ├── pipelines.py         # 数据处理管道
-│   ├── settings.py          # 爬虫设置
-│   ├── middlewares.py       # 中间件
-│   └── spiders/
-│       └── trans_spider.py  # 爬虫核心
-└── frontend/
-    └── index.php            # 搜索页面
-```
+本项目数据来源于 [2345.lgbt](https://2345.lgbt) 导航站，包含两类内容：
 
-## 本地开发
+1. **需要爬取的网站**（`domains.json` 中的网站）：自动爬取内容
+2. **直接添加的链接**：直接索引 URL 和标题（如 Twitter、Steam 游戏等）
 
-### 前置要求
+详细列表见 `domains.json`。
 
-- Python 3.8+
-- Docker Desktop
-- PHP 7.4+ (自带 PHP 可用)
-- Git
+---
 
-### 安装依赖
+## 快速部署
+
+### 本地开发测试
 
 ```bash
-# 安装 Python 依赖
-pip install scrapy trafilatura meilisearch
+# 1. 克隆代码
+git clone https://github.com/epheiamoe/2345.desuwa.org.git
+cd 2345.desuwa.org
 
-# 克隆 2345.LGBT 仓库（已在项目中）
-```
-
-### 启动服务
-
-#### 方式一：使用启动脚本（推荐）
-
-```bash
-# Windows
-start.bat
-
-# Linux/Mac
-chmod +x start.sh
-./start.sh
-```
-
-#### 方式二：手动启动
-
-```bash
-# 1. 启动 Meilisearch
+# 2. 启动 Meilisearch（需要 Docker）
 docker-compose up -d
 
-# 2. 运行爬虫（可选，首次测试可跳过）
+# 3. 运行爬虫
 cd transspider
-scrapy crawl trans
+pip install scrapy trafilatura meilisearch
+scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=200
 
-# 3. 启动 PHP 服务器
-cd frontend
+# 4. 启动 PHP 服务器
+cd ../frontend
 php -S localhost:8080
 ```
 
-### 访问测试
+访问 http://localhost:8080 测试。
 
-- 搜索页面: http://localhost:8080
-- Meilisearch: http://localhost:7700
+### 生产环境部署（Docker + Nginx）
 
-## 域名列表
-
-- **完整列表**: `domains.txt` (105 个域名)
-- **测试列表**: `domains_test.txt` (3 个核心域名)
-
-### 部署前清理
-
-在部署到服务器前，需要从 `domains.txt` 中移除以下大型网站：
-
-- 社交媒体: youtube.com, twitter.com, reddit.com, dcard.tw
-- 百科全书: zh.wikipedia.org, en.wikipedia.org, ja.wikipedia.org
-- 视频/电商: bilibili.com, shopee.tw, amazon.co.jp
-- 其他大型网站
-
-可以使用 `extract_domains.py` 重新生成域名列表，然后手动编辑。
-
-## 爬虫配置
-
-### WARP 代理（可选）
-
-如遇到 IP 被封，可在 `transspider/config.py` 中开启 WARP 代理：
-
-```python
-USE_WARP_PROXY = True
-WARP_SOCKS5_PROXY = "socks5://127.0.0.1:1080"
-```
-
-### 爬虫设置
-
-在 `transspider/settings.py` 中可调整：
-
-- `DOWNLOAD_DELAY`: 请求间隔（秒）
-- `CONCURRENT_REQUESTS_PER_DOMAIN`: 并发数
-- `ROBOTSTXT_OBEY`: 是否遵守 robots.txt
-
-## 部署（用户验收后）
-
-### 服务器要求
-
-- 安装宝塔面板
-- 安装 Docker
-- 域名已解析到服务器
-
-### 部署步骤
-
-1. **上传代码**
+#### 1. 安装依赖
 
 ```bash
-rsync -avz --exclude '.git' ./ user@your-server:/www/wwwroot/2345.desuwa.org/
+# 安装 Docker 和 Docker Compose
 ```
 
-2. **添加站点**
-
-在宝塔面板中添加站点：
-- 域名: 2345.desuwa.org
-- 根目录: /www/wwwroot/2345.desuwa.org/frontend
-
-3. **启动 Meilisearch**
+#### 2. 部署代码
 
 ```bash
-cd /www/wwwroot/2345.desuwa.org
+git clone https://github.com/epheiamoe/2345.desuwa.org.git /var/www/2345.desuwa.org
+cd /var/www/2345.desuwa.org
+```
+
+#### 3. 启动 Meilisearch
+
+```bash
 docker-compose up -d
 ```
 
-4. **配置定时任务**
+#### 4. 配置 Nginx
 
-添加 cron 任务，每周更新一次索引：
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    root /var/www/2345.desuwa.org/frontend;
+    index index.php;
 
-```bash
-# 每周日凌晨 3 点运行爬虫
-0 3 * * 0 cd /www/wwwroot/2345.desuwa.org/transspider && scrapy crawl trans
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
 ```
 
-5. **配置 Nginx 反向代理**
+#### 5. 运行爬虫
 
-在宝塔站点设置中添加 Meilisearch 反向代理（可选）。
+```bash
+cd /var/www/2345.desuwa.org/transspider
+pip install scrapy trafilatura meilisearch
+scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=500
+```
 
-## AI 概览功能（TODO）
+#### 6. 设置定时任务
 
-当前版本已预留接口，后续将接入 LLM 实现 AI 智能摘要。
+```bash
+# 每周日凌晨3点更新索引
+0 3 * * 0 cd /var/www/2345.desuwa.org/transspider && scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=500 >> /var/log/trans-spider.log 2>&1
+```
 
-## 安全配置
+---
 
-- User-Agent 随机化
-- 遵守 robots.txt
-- 请求限速
-- 首页免责声明
-- 搜索速率限制（每 IP 每分钟 20 次）
+## 配置说明
+
+### 域名列表
+
+- `domains.json` - 完整的域名和标签列表（推荐使用）
+- `domains_test.txt` - 测试用域名（少量）
+
+### Meilisearch 配置
+
+在 `transspider/config.py` 中：
+
+```python
+MEILISEARCH_HOST = "localhost"
+MEILISEARCH_PORT = 7700
+MEILISEARCH_INDEX = "trans_resources"
+```
+
+### PHP 前端配置
+
+在 `frontend/index.php` 中：
+
+```php
+$MEILISEARCH_HOST = 'localhost';
+$MEILISEARCH_PORT = '7700';
+$MEILISEARCH_INDEX = 'trans_resources';
+```
+
+---
+
+## 搜索功能
+
+### 基本搜索
+
+```
+https://2345.desuwa.org/?q=关键词
+```
+
+### 标签筛选
+
+```
+# 只显示 MtF 标签
+https://2345.desuwa.org/?q=HRT&tags=MtF
+
+# 显示 MtF 或 FtM 标签
+https://2345.desuwa.org/?q=HRT&tags=MtF,FtM
+```
+
+可用标签：MtF、FtM、社区、性、知识库、HRT、指南、报告、学术、影视、音乐、游戏、小说、法律、医疗
+
+---
+
+## 目录结构
+
+```
+2345.desuwa.org/
+├── frontend/              # PHP 前端
+│   └── index.php          # 搜索页面
+├── transspider/           # Scrapy 爬虫
+│   ├── spiders/          # 爬虫代码
+│   ├── pipelines.py       # Meilisearch 推送
+│   └── config.py         # 配置
+├── domains.json          # 域名和标签列表
+├── domains_test.txt      # 测试用域名
+├── docker-compose.yml    # Meilisearch Docker
+├── DEPLOY.md             # 部署文档
+└── README.md
+```
+
+---
 
 ## 许可证
 
-本项目采用 [LGPLv3](LICENSE) 开源许可证。
+LGPLv3 - 与 2345.lgbt 相同
 
-- 本项目代码采用 LGPLv3 许可证，允许自由使用、修改和分发
-- 数据来源：2345.lgbt 导航站（同样采用 LGPLv3）
+---
 
-## 注意事项
+## 相关链接
 
-1. 本搜索引擎仅收录 2345.lgbt 公开资源
-2. 医疗问题请咨询专业医生
-3. 遵守目标网站的 robots.txt 规则
+- **在线演示**: https://2345.desuwa.org
+- **导航站**: https://2345.lgbt
+- **GitHub**: https://github.com/epheiamoe/2345.desuwa.org
