@@ -202,6 +202,7 @@ if ($query) {
             <a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank" style="color:#1a73e8;">⭐ 开源</a>
             <a href="/api/console.html" target="_blank">API 控制台</a>
             <a href="/docs/api.html" target="_blank">API 文档</a>
+            <a href="javascript:void(0)" id="theme-toggle" title="切换主题">🌙</a>
         </div>
     </div>
     

@@ -4,6 +4,234 @@
     box-sizing: border-box;
 }
 
+/* 暗黑模式 */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #202124;
+        color: #e8eaed;
+    }
+    
+    .header {
+        background: #202124;
+    }
+    
+    .logo {
+        color: #8ab4f8;
+    }
+    
+    .nav-links a {
+        color: #9aa0a6;
+    }
+    
+    .nav-links a:hover {
+        color: #8ab4f8;
+    }
+    
+    .search-form {
+        background: #303134;
+        border-color: #5f6368;
+    }
+    
+    .search-input {
+        background: #303134;
+        color: #e8eaed;
+    }
+    
+    .lang-link, .tag-link {
+        background: #303134;
+        color: #9aa0a6;
+    }
+    
+    .lang-link:hover, .tag-link:hover {
+        background: #3c4043;
+        color: #8ab4f8;
+    }
+    
+    .domain-filter {
+        background: #303134;
+    }
+    
+    .domain-link {
+        background: #303134;
+        border-color: #5f6368;
+    }
+    
+    .pagination a, .pagination span {
+        background: #303134;
+        border-color: #5f6368;
+        color: #8ab4f8;
+    }
+    
+    .result-title a {
+        color: #8ab4f8;
+    }
+    
+    .result-url {
+        color: #9aa0a6;
+    }
+    
+    .result-snippet {
+        color: #bdc1c6;
+    }
+    
+    .result-snippet em {
+        background: #303134;
+        color: #bdc1c6;
+    }
+    
+    .tag-badge {
+        background: #303134;
+        color: #8ab4f8;
+    }
+    
+    .footer {
+        background: #171717;
+    }
+    
+    .footer-content {
+        color: #9aa0a6;
+    }
+    
+    .disclaimer {
+        background: #3c3030;
+        color: #f8b878;
+    }
+    
+    .ai-overview {
+        background: #303134;
+    }
+    
+    .ai-overview h3 {
+        color: #8ab4f8;
+    }
+    
+    .ai-overview p {
+        color: #bdc1c6;
+    }
+    
+    .error-msg {
+        background: #3c2020;
+        color: #f28b82;
+    }
+    
+    .results-info {
+        color: #9aa0a6;
+    }
+}
+
+/* 手动暗黑模式 */
+body.dark {
+    background: #202124;
+    color: #e8eaed;
+}
+
+body.dark .header {
+    background: #202124;
+}
+
+body.dark .logo {
+    color: #8ab4f8;
+}
+
+body.dark .nav-links a {
+    color: #9aa0a6;
+}
+
+body.dark .nav-links a:hover {
+    color: #8ab4f8;
+}
+
+body.dark .search-form {
+    background: #303134;
+    border-color: #5f6368;
+}
+
+body.dark .search-input {
+    background: #303134;
+    color: #e8eaed;
+}
+
+body.dark .lang-link, body.dark .tag-link {
+    background: #303134;
+    color: #9aa0a6;
+}
+
+body.dark .lang-link:hover, body.dark .tag-link:hover {
+    background: #3c4043;
+    color: #8ab4f8;
+}
+
+body.dark .domain-filter {
+    background: #303134;
+}
+
+body.dark .domain-link {
+    background: #303134;
+    border-color: #5f6368;
+}
+
+body.dark .pagination a, body.dark .pagination span {
+    background: #303134;
+    border-color: #5f6368;
+    color: #8ab4f8;
+}
+
+body.dark .result-title a {
+    color: #8ab4f8;
+}
+
+body.dark .result-url {
+    color: #9aa0a6;
+}
+
+body.dark .result-snippet {
+    color: #bdc1c6;
+}
+
+body.dark .result-snippet em {
+    background: #303134;
+    color: #bdc1c6;
+}
+
+body.dark .tag-badge {
+    background: #303134;
+    color: #8ab4f8;
+}
+
+body.dark .footer {
+    background: #171717;
+}
+
+body.dark .footer-content {
+    color: #9aa0a6;
+}
+
+body.dark .disclaimer {
+    background: #3c3030;
+    color: #f8b878;
+}
+
+body.dark .ai-overview {
+    background: #303134;
+}
+
+body.dark .ai-overview h3 {
+    color: #8ab4f8;
+}
+
+body.dark .ai-overview p {
+    color: #bdc1c6;
+}
+
+body.dark .error-msg {
+    background: #3c2020;
+    color: #f28b82;
+}
+
+body.dark .results-info {
+    color: #9aa0a6;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background: #fff;

@@ -1,6 +1,5 @@
 // 检测用户浏览器语言并自动选择
 function detectUserLanguage() {
-    // 已经有搜索词或已有语言参数时不处理
     var urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('q') || urlParams.get('lang')) return;
     
@@ -16,7 +15,45 @@ function detectUserLanguage() {
     window.location.href = '?lang=' + lang;
 }
 
+// 暗黑模式
+function initTheme() {
+    var theme = localStorage.getItem('theme');
+    var isDark = false;
+    
+    if (theme === 'dark') {
+        isDark = true;
+    } else if (theme === 'light') {
+        isDark = false;
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        isDark = true;
+    }
+    
+    if (isDark) {
+        document.body.classList.add('dark');
+    }
+    
+    updateThemeIcon(isDark);
+}
+
+function updateThemeIcon(isDark) {
+    var themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+        themeBtn.textContent = isDark ? '☀️' : '🌙';
+    }
+}
+
+function toggleTheme() {
+    var isDark = document.body.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateThemeIcon(isDark);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // 首页没有搜索词时检测设备语言
+    initTheme();
     detectUserLanguage();
+    
+    var themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', toggleTheme);
+    }
 });
