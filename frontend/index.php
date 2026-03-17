@@ -203,6 +203,22 @@ if ($query) {
                 >
                 <input type="hidden" name="tags" id="tags-input" value="<?php echo htmlspecialchars(implode(',', $selectedTags)); ?>">
                 <button type="submit" class="search-btn">搜索</button>
+                
+                <!-- 语言筛选 -->
+                <div class="tag-filter" style="margin-top:10px;">
+                    <span style="color:#666;font-size:13px;margin-right:10px;">语言：</span>
+                    <?php foreach ($availableLanguages as $langCode => $langName): ?>
+                        <label>
+                            <input type="radio" name="lang" value="<?php echo htmlspecialchars($langCode); ?>"
+                                <?php echo $selectedLang === $langCode ? 'checked' : ''; ?>>
+                            <span><?php echo htmlspecialchars($langName); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                    <label>
+                        <input type="radio" name="lang" value="" <?php echo $selectedLang === '' ? 'checked' : ''; ?>>
+                        <span>全部</span>
+                    </label>
+                </div>
             </form>
             
             <?php if (!$query): ?>
@@ -218,22 +234,6 @@ if ($query) {
                         <span><?php echo htmlspecialchars($tag); ?></span>
                     </label>
                 <?php endforeach; ?>
-            </div>
-            
-            <!-- 语言筛选 -->
-            <div class="tag-filter" style="margin-top:10px;">
-                <span style="color:#666;font-size:13px;margin-right:10px;">语言：</span>
-                <?php foreach ($availableLanguages as $langCode => $langName): ?>
-                    <label>
-                        <input type="radio" name="lang" value="<?php echo htmlspecialchars($langCode); ?>"
-                            <?php echo $selectedLang === $langCode ? 'checked' : ''; ?>>
-                        <span><?php echo htmlspecialchars($langName); ?></span>
-                    </label>
-                <?php endforeach; ?>
-                <label>
-                    <input type="radio" name="lang" value="" <?php echo $selectedLang === '' ? 'checked' : ''; ?>>
-                    <span>全部</span>
-                </label>
             </div>
         </div>
         
