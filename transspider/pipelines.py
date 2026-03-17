@@ -54,11 +54,15 @@ class MeilisearchPipeline:
 
     def __init__(self):
         """初始化 Meilisearch 客户端"""
-        # 开发模式使用空字符串作为 API key
-        api_key = MEILISEARCH_API_KEY if MEILISEARCH_API_KEY else ""
+        import time
+
         self.client = meilisearch.Client(
-            f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}", api_key
+            f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}"
         )
+        self.index = None
+        self.items_buffer = []
+        self.batch_size = 100
+        self.uid_counter = int(time.time() * 1000)  # 使用时间戳作为 UID 起始值
         self.index = None
         self.items_buffer = []
         self.batch_size = 100  # 批量推送大小
@@ -78,7 +82,7 @@ class MeilisearchPipeline:
             try:
                 self.index = self.client.get_index(MEILISEARCH_INDEX)
                 spider.logger.info(f"使用已有索引: {MEILISEARCH_INDEX}")
-            except meilisearch.errors.MeilisearchApiError:
+            except Exception:
                 self.index = self.client.create_index(
                     MEILISEARCH_INDEX, {"primaryKey": "url"}
                 )
@@ -110,11 +114,14 @@ class MeilisearchPipeline:
             return item
 
         # 提取有用信息
+        self.uid_counter += 1
         doc = {
+            "uid": self.uid_counter,
             "url": item.get("url", ""),
             "title": item.get("title", "").strip(),
-            "content": item.get("content", "").strip(),
+            "content": item.get("content", "").strip()[:5000],
             "domain": item.get("domain", ""),
+            "tags": item.get("tags", []),
             "crawled_at": datetime.now().isoformat(),
         }
 

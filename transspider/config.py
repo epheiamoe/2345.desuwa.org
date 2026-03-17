@@ -4,11 +4,16 @@ Scrapy 跨性别资源爬虫
 仅爬取 2345.lgbt 导航站收录的网站
 """
 
-# 项目根目录
-PROJECT_ROOT = "E:/Epheia/dev/vibe-app/tools/vps_serve/project-trans/2345.desuwa.org"
+import os
 
-# 域名列表文件（测试用，部署时使用 domains.txt）
-DOMAINS_FILE = f"{PROJECT_ROOT}/domains_test.txt"
+# 项目根目录（自动检测）
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 域名列表文件 - 使用相对于项目根目录的路径
+# 先尝试 domains_test.txt（测试用），如果没有则使用 domains.txt
+DOMAINS_FILE = os.path.join(PROJECT_ROOT, "domains_test.txt")
+if not os.path.exists(DOMAINS_FILE):
+    DOMAINS_FILE = os.path.join(PROJECT_ROOT, "domains.txt")
 
 # Meilisearch 配置
 MEILISEARCH_HOST = "localhost"
