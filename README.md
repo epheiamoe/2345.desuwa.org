@@ -23,6 +23,7 @@
 - **搜索引擎**: Meilisearch (Docker)
 - **前端**: 纯 PHP
 - **API**: Flask + GitHub OAuth
+- **AI 集成**: 提供 Claude Skill 方便 AI 调用搜索 API
 
 ### 数据来源
 
