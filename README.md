@@ -28,8 +28,8 @@
 
 本项目数据来源于 [2345.lgbt](https://2345.lgbt) 导航站，包含两类内容：
 
-1. **需要爬取的网站**（`domains.json` 中的网站）：自动爬取内容
-2. **直接添加的链接**：直接索引 URL 和标题（如 Twitter、Steam 游戏等）
+1. **需要爬取的网站**（`domains.json` 中的 `domains` 列表）：自动爬取内容
+2. **直接添加的链接**（`domains.json` 中的 `direct_urls` 列表）：直接索引 URL 和标题（如 Steam 游戏、Twitter 账号等）
 
 详细列表见 `domains.json`。
 
@@ -50,7 +50,10 @@ docker-compose up -d
 # 3. 运行爬虫
 cd transspider
 pip install scrapy trafilatura meilisearch
-scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=200
+scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000
+
+# 3.1 添加直接链接（如 Steam 游戏、Twitter 等）
+python add_direct_links.py
 
 # 4. 启动 PHP 服务器
 cd ../frontend
