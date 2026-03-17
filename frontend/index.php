@@ -22,9 +22,17 @@ $availableTags = ['MtF', 'FtM', '社区', '性', '知识库', 'HRT', '指南', '
 // 获取搜索关键词（改用 GET 方法）
 $query = isset($_GET['q']) ? trim($_GET['q']) : '';
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$selectedTags = isset($_GET['tags']) ? $_GET['tags'] : [];
-if (!is_array($selectedTags)) {
-    $selectedTags = $selectedTags ? [$selectedTags] : [];
+
+// 处理标签筛选 - PHP 对多个同名 GET 参数处理有问题
+$selectedTags = [];
+if (isset($_GET['tags'])) {
+    $tagsParam = $_GET['tags'];
+    if (is_array($tagsParam)) {
+        $selectedTags = $tagsParam;
+    } elseif (is_string($tagsParam) && $tagsParam) {
+        // 尝试解析逗号分隔的标签
+        $selectedTags = array_filter(array_map('trim', explode(',', $tagsParam)));
+    }
 }
 $limit = 10; // 每页显示 10 条
 $offset = ($page - 1) * $limit;
@@ -399,6 +407,7 @@ if ($query) {
                     value="<?php echo htmlspecialchars($query); ?>"
                     autofocus
                 >
+                <input type="hidden" name="tags" id="tags-input" value="<?php echo htmlspecialchars(implode(',', $selectedTags)); ?>">
                 <button type="submit" class="search-btn">搜索</button>
             </form>
             
@@ -406,12 +415,20 @@ if ($query) {
             <div class="tag-filter">
                 <?php foreach ($availableTags as $tag): ?>
                     <label>
-                        <input type="checkbox" name="tags[]" value="<?php echo htmlspecialchars($tag); ?>"
-                            <?php echo in_array($tag, $selectedTags) ? 'checked' : ''; ?>>
+                        <input type="checkbox" class="tag-checkbox" value="<?php echo htmlspecialchars($tag); ?>"
+                            <?php echo in_array($tag, $selectedTags) ? 'checked' : ''; ?>
+                            onchange="updateTagsInput()">
                         <span><?php echo htmlspecialchars($tag); ?></span>
                     </label>
                 <?php endforeach; ?>
             </div>
+            <script>
+            function updateTagsInput() {
+                var checkboxes = document.querySelectorAll('.tag-checkbox:checked');
+                var tags = Array.from(checkboxes).map(cb => cb.value);
+                document.getElementById('tags-input').value = tags.join(',');
+            }
+            </script>
         </div>
         
         <?php if ($error): ?>
