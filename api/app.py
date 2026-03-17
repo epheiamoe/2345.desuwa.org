@@ -10,6 +10,16 @@ import time
 from datetime import datetime
 from functools import wraps
 
+# 加载 .env 文件
+env_path = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(env_path):
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key, value)
+
 from flask import Flask, request, jsonify, redirect, session, send_from_directory
 from flask_cors import CORS
 import meilisearch
@@ -301,13 +311,25 @@ def regenerate_key():
 @app.route("/api/search")
 @require_api_key
 def search():
-    """搜索"""
+    """搜索
+
+    参数:
+    - q: 搜索关键词 (必需)
+    - lang: 语言筛选 (zh, en, ja, es, nl, all)
+    - limit: 返回结果数量 (1-20，默认10)
+    - offset: 起始位置 (默认0)
+    - domain: 站点筛选
+    - tags: 标签筛选 (逗号分隔)
+    """
     query = request.args.get("q", "")
-    lang = request.args.get("lang", "")
-    tags = request.args.get("tags", "")
-    domain = request.args.get("domain", "")
-    limit = min(int(request.args.get("limit", 10)), 100)
+    lang = request.args.get("lang", "all")
+    limit = min(max(int(request.args.get("limit", 10)), 1), 20)
     offset = int(request.args.get("offset", 0))
+    domain = request.args.get("domain", "")
+    tags = request.args.get("tags", "")
+
+    # 中文简繁体选项
+    script = request.args.get("script", "all")  # simplified, traditional, all
 
     if not query:
         return jsonify({"error": "缺少搜索关键词"}), 400
@@ -315,8 +337,8 @@ def search():
     # 构建搜索参数
     search_params = {
         "q": query,
-        "limit": limit,
-        "offset": offset,
+        "limit": 100,  # 先获取更多结果，再过滤
+        "offset": 0,
         "attributesToHighlight": ["title", "content"],
         "highlightPreTag": "<em>",
         "highlightPostTag": "</em>",
@@ -328,7 +350,9 @@ def search():
     filters = []
     if tags:
         for tag in tags.split(","):
-            filters.append(f"tags = '{tag.strip()}'")
+            tag = tag.strip()
+            if tag:
+                filters.append(f"tags = '{tag}'")
     if domain:
         filters.append(f"domain = '{domain}'")
 
@@ -345,14 +369,22 @@ def search():
 
     hits = results.get("hits", [])
 
-    # 前端过滤语言
-    if lang:
+    # 过滤语言和简繁体
+    if lang != "all" or script != "all":
         filtered_hits = []
         for h in hits:
             url = h.get("url", "")
+
+            # 检测语言
             doc_lang = "zh"
-            if "/zh-" in url:
+            doc_script = "simplified"
+
+            if "/zh-" in url or url.endswith("/zh"):
                 doc_lang = "zh"
+                if "hant" in url or "tw" in url or "hk" in url:
+                    doc_script = "traditional"
+                else:
+                    doc_script = "simplified"
             elif "/en/" in url:
                 doc_lang = "en"
             elif "/ja/" in url:
@@ -361,14 +393,47 @@ def search():
                 doc_lang = "es"
             elif "/nl/" in url:
                 doc_lang = "nl"
+            else:
+                # 无语言路径，默认中文简体
+                doc_lang = "zh"
+                doc_script = "simplified"
 
-            if doc_lang == lang:
+            # 检查语言筛选
+            lang_match = lang == "all" or doc_lang == lang
+
+            # 检查简繁体筛选
+            script_match = script == "all" or doc_script == script
+
+            if lang_match and script_match:
+                h["_language"] = doc_lang
+                h["_script"] = doc_script
                 filtered_hits.append(h)
+
         hits = filtered_hits
+
+    # 分页
+    total = len(hits)
+    hits = hits[offset : offset + limit]
 
     # 获取用户剩余配额
     db = load_db()
     user = db["users"].get(request.user_id, {})
+    credits = user.get("credits", 0)
+    credits_used = user.get("credits_used", 0)
+
+    return jsonify(
+        {
+            "results": hits,
+            "total": total,
+            "query": query,
+            "credits_used": credits_used + 1,
+            "credits_remaining": credits - credits_used - 1,
+            "limit": limit,
+            "offset": offset,
+        }
+    )
+
+    # ============ 用户信息端点 ============
     credits = user.get("credits", 0)
     credits_used = user.get("credits_used", 0)
 
