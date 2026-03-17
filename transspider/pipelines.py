@@ -54,18 +54,12 @@ class MeilisearchPipeline:
 
     def __init__(self):
         """初始化 Meilisearch 客户端"""
-        import time
-
         self.client = meilisearch.Client(
             f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}"
         )
         self.index = None
         self.items_buffer = []
         self.batch_size = 100
-        self.uid_counter = int(time.time() * 1000)  # 使用时间戳作为 UID 起始值
-        self.index = None
-        self.items_buffer = []
-        self.batch_size = 100  # 批量推送大小
 
     def open_spider(self, spider):
         """
@@ -82,6 +76,7 @@ class MeilisearchPipeline:
             try:
                 self.index = self.client.get_index(MEILISEARCH_INDEX)
                 spider.logger.info(f"使用已有索引: {MEILISEARCH_INDEX}")
+
             except Exception:
                 self.index = self.client.create_index(
                     MEILISEARCH_INDEX, {"primaryKey": "url"}
@@ -109,16 +104,14 @@ class MeilisearchPipeline:
         """
         处理每个 Item
 
-        将数据推送到 Meilisearch
+        将数据推送到 Meilisearch（使用 URL 作为 primary key，实现更新而非重复新增）
         """
         if self.index is None:
             spider.logger.warning("Meilisearch 未初始化，跳过推送")
             return item
 
         # 提取有用信息
-        self.uid_counter += 1
         doc = {
-            "uid": self.uid_counter,
             "url": item.get("url", ""),
             "title": item.get("title", "").strip(),
             "content": item.get("content", "").strip()[:5000],
@@ -130,9 +123,6 @@ class MeilisearchPipeline:
         # 跳过空标题或无效 URL
         if not doc["title"] or not doc["url"]:
             return item
-
-        # 使用 URL 作为唯一标识符，避免重复
-        doc["uid"] = hash(doc["url"]) % 10000000
 
         # 添加到缓冲区
         self.items_buffer.append(doc)
