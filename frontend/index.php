@@ -122,13 +122,6 @@ if ($query) {
             $searchParams['filter'] = $existingFilter ? "({$existingFilter}) AND {$siteFilter}" : $siteFilter;
         }
         
-        // 添加语言筛选
-        if (!empty($selectedLang)) {
-            $existingFilter = $searchParams['filter'] ?? '';
-            $langFilter = "language = '{$selectedLang}'";
-            $searchParams['filter'] = $existingFilter ? "({$existingFilter}) AND {$langFilter}" : $langFilter;
-        }
-        
         $postData = json_encode($searchParams);
         
         $ch = curl_init($url);
@@ -149,6 +142,31 @@ if ($query) {
             $results = $data['hits'] ?? [];
             $totalHits = $data['estimatedTotalHits'] ?? 0;
             $searchTime = $data['processingTimeMs'] ?? 0;
+            
+            // 添加语言筛选（前端过滤）
+            if (!empty($selectedLang)) {
+                $filteredResults = [];
+                foreach ($results as $r) {
+                    $url = $r['url'] ?? '';
+                    $lang = 'zh';  // 默认中文
+                    if (preg_match('/\/zh-(cn|tw|hk|hant)\//', $url)) {
+                        $lang = 'zh';
+                    } elseif (preg_match('/\/en\//', $url)) {
+                        $lang = 'en';
+                    } elseif (preg_match('/\/ja\//', $url)) {
+                        $lang = 'ja';
+                    } elseif (preg_match('/\/es\//', $url)) {
+                        $lang = 'es';
+                    } elseif (preg_match('/\/nl\//', $url)) {
+                        $lang = 'nl';
+                    }
+                    if ($lang === $selectedLang) {
+                        $filteredResults[] = $r;
+                    }
+                }
+                $results = $filteredResults;
+                $totalHits = count($results);
+            }
         } else {
             $error = "搜索服务暂时不可用 (HTTP {$httpCode})";
         }

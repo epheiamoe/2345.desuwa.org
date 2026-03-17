@@ -92,7 +92,7 @@ class MeilisearchPipeline:
 
             # 配置筛选属性
             try:
-                self.index.update_filterable_attributes(["domain", "tags", "language"])
+                self.index.update_filterable_attributes(["domain", "tags"])
             except Exception as e:
                 spider.logger.warning(f"设置 filterable_attributes 失败: {e}")
 
@@ -122,20 +122,6 @@ class MeilisearchPipeline:
         url = item.get("url", "")
         doc_id = abs(hash(url)) % 100000000
 
-        # 从 URL 中提取语言
-        import re
-
-        lang_match = re.search(r"/(zh-cn|zh-tw|zh-hk|zh-hant|en|ja|es|nl)/", url)
-        if lang_match:
-            lang = lang_match.group(1)
-            # 统一语言代码
-            if lang.startswith("zh-"):
-                lang = "zh"
-            elif lang in ("en", "ja", "es", "nl"):
-                pass
-        else:
-            lang = "zh"  # 默认中文
-
         doc = {
             "id": doc_id,
             "url": url,
@@ -143,7 +129,6 @@ class MeilisearchPipeline:
             "content": item.get("content", "").strip()[:5000],
             "domain": item.get("domain", ""),
             "tags": item.get("tags", []),
-            "language": lang,
             "crawled_at": datetime.now().isoformat(),
         }
 
