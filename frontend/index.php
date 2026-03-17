@@ -238,7 +238,7 @@ if ($query) {
                             <div class="result-title">
                                 <?php 
                                 $linkUrl = $result['url'];
-                                if (!preg_match('/^https?:\/\/[^\/]+\//i', $linkUrl)) {
+                                if (!preg_match('/^https?:\/\/[^\/]+(\/.*)?$/i', $linkUrl)) {
                                     $linkUrl = 'https://' . ($result['domain'] ?? '');
                                 }
                                 ?>
@@ -252,18 +252,22 @@ if ($query) {
                                 $url = $result['url'];
                                 $domain = $result['domain'];
                                 
-                                // 检查 URL 是否有效（必须有有效的 scheme 和 host）
-                                $urlValid = !empty($url) && preg_match('/^https?:\/\/[^\/]+\//i', $url);
+                                // 检查 URL 是否有效（必须有有效的 scheme://domain/）
+                                $urlValid = !empty($url) && preg_match('/^https?:\/\/[^\/]+(\/.*)?$/i', $url);
                                 
                                 if (!$urlValid) {
-                                    // URL 无效，使用 domain + path 组合
+                                    // URL 无效，使用 domain 作为后备
                                     $url = 'https://' . $domain . '/';
                                 }
                                 
                                 $displayUrl = strlen($url) > 80 ? substr($url, 0, 80) . '...' : $url;
+                                $urlPath = str_replace($domain, '', $displayUrl);
+                                if (strpos($urlPath, 'https://') === 0 || strpos($urlPath, 'http://') === 0) {
+                                    $urlPath = '/';
+                                }
                                 ?>
                                 <strong><?php echo htmlspecialchars($domain); ?></strong>
-                                <span style="color:#545454;"> - <?php echo htmlspecialchars(str_replace($domain, '', $displayUrl)); ?></span>
+                                <span style="color:#545454;"> - <?php echo htmlspecialchars($urlPath); ?></span>
                             </div>
                             <?php if (!empty($result['tags'])): ?>
                             <div class="result-tags">
