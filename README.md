@@ -185,7 +185,10 @@ docker-compose up -d
 
 ## 许可证
 
-MIT License
+本项目采用 [LGPLv3](LICENSE) 开源许可证。
+
+- 本项目代码采用 LGPLv3 许可证，允许自由使用、修改和分发
+- 数据来源：2345.lgbt 导航站（同样采用 LGPLv3）
 
 ## 注意事项
 
