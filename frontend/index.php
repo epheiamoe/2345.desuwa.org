@@ -43,6 +43,9 @@ if (isset($_GET['tags'])) {
         $selectedTags = array_filter(array_map('trim', explode(',', $tagsParam)));
     }
 }
+
+// 处理站点筛选
+$selectedSite = isset($_GET['site']) ? trim($_GET['site']) : '';
 $limit = 10; // 每页显示 10 条
 $offset = ($page - 1) * $limit;
 $results = [];
@@ -98,6 +101,13 @@ if ($query) {
                 $filters[] = "tags = '{$tag}'";
             }
             $searchParams['filter'] = implode(' OR ', $filters);
+        }
+        
+        // 添加站点筛选
+        if (!empty($selectedSite)) {
+            $existingFilter = $searchParams['filter'] ?? '';
+            $siteFilter = "domain = '{$selectedSite}'";
+            $searchParams['filter'] = $existingFilter ? "({$existingFilter}) AND {$siteFilter}" : $siteFilter;
         }
         
         $postData = json_encode($searchParams);
@@ -283,9 +293,39 @@ if ($query) {
         /* 搜索结果 */
         .results-info {
             text-align: left;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             color: #666;
             font-size: 14px;
+        }
+        
+        /* 域名筛选 */
+        .domain-filter {
+            text-align: left;
+            margin-bottom: 15px;
+            font-size: 13px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .domain-link {
+            display: inline-block;
+            margin: 2px 4px;
+            padding: 3px 8px;
+            background: #fff;
+            border: 1px solid #dfe1e5;
+            border-radius: 12px;
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        
+        .domain-link:hover {
+            background: #e8f0fe;
+        }
+        
+        .domain-link-more {
+            color: #1a73e8;
+            cursor: pointer;
         }
         
         .results-list {
@@ -470,13 +510,53 @@ if ($query) {
                 (<?php echo $searchTime; ?> 毫秒)
             </div>
             
+            <?php 
+            // 统计搜索结果中的域名
+            $domainCounts = [];
+            foreach ($results as $r) {
+                $d = $r['domain'] ?? '';
+                if ($d) {
+                    $domainCounts[$d] = ($domainCounts[$d] ?? 0) + 1;
+                }
+            }
+            if (count($domainCounts) > 1):
+            ?>
+            <div class="domain-filter">
+                <span style="color:#666;">来源：</span>
+                <?php 
+                $i = 0;
+                $totalDomains = count($domainCounts);
+                foreach (array_keys($domainCounts) as $domain): 
+                    $i++;
+                    $show = $i <= 5;
+                    $style = $show ? '' : 'display:none;';
+                ?>
+                    <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?>&site=<?php echo urlencode($domain); ?>" 
+                       class="domain-link" style="<?php echo $style; ?>"
+                       title="只看 <?php echo htmlspecialchars($domain); ?>">
+                        <?php echo htmlspecialchars($domain); ?> (<?php echo $domainCounts[$domain]; ?>)
+                    </a>
+                <?php endforeach; ?>
+                <?php if ($totalDomains > 5): ?>
+                    <a href="javascript:void(0)" onclick="var links=document.querySelectorAll('.domain-link-hidden');links.forEach(l=>l.style.display='inline');this.style.display='none';" class="domain-link-more">更多 (<?php echo $totalDomains - 5; ?>)</a>
+                <?php endif; ?>
+            </div>
+            <script>
+            document.querySelectorAll('.domain-link').forEach(function(link) {
+                if (link.style.display === 'none') {
+                    link.classList.add('domain-link-hidden');
+                }
+            });
+            </script>
+            <?php endif; ?>
+            
             <?php if (empty($results)): ?>
                 <div class="no-results">
                     <p>没有找到相关结果，请尝试其他关键词</p>
                 </div>
             <?php else: ?>
                 <div class="results-list">
-                    <?php foreach ($result as $result): ?>
+                    <?php foreach ($results as $result): ?>
                         <div class="result-item">
                             <div class="result-title">
                                 <a href="<?php echo htmlspecialchars($result['url']); ?>" target="_blank">
