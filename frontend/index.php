@@ -179,11 +179,11 @@ if ($query) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2345.desuwa.org - 跨性别资源搜索</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
     <div class="header">
-        <a href="/" class="logo">2345.desuwa.org</a>
+        <a href="<?php echo $selectedLang ? '/?lang=' . htmlspecialchars($selectedLang) : '/'; ?>" class="logo">2345.desuwa.org</a>
         <div class="nav-links">
             <a href="https://2345.lgbt" target="_blank">2345.lgbt 导航站</a>
             <a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank" style="color:#1a73e8;">⭐ 开源</a>
@@ -228,12 +228,21 @@ if ($query) {
             <!-- 标签筛选 -->
             <div style="margin-top:10px;">
                 <span style="color:#666;font-size:13px;margin-right:8px;">标签：</span>
-                <?php foreach ($availableTags as $tag): ?>
+                <?php foreach ($availableTags as $i => $tag): ?>
+                    <?php if ($i >= 8): ?>
+                    <span class="tag-more" style="display:none;">
+                    <?php endif; ?>
                     <a href="?q=<?php echo urlencode($query); ?><?php echo $selectedLang ? '&lang=' . urlencode($selectedLang) : ''; ?>&tags=<?php echo urlencode($tag); ?>" 
                        class="tag-link <?php echo in_array($tag, $selectedTags) ? 'active' : ''; ?>">
                         <?php echo htmlspecialchars($tag); ?>
                     </a>
+                    <?php if ($i >= 7): ?>
+                    </span>
+                    <?php endif; ?>
                 <?php endforeach; ?>
+                <?php if (count($availableTags) > 8): ?>
+                <a href="javascript:void(0)" onclick="document.querySelectorAll('.tag-more').forEach(el=>el.style.display='inline');this.style.display='none'" style="font-size:12px;color:#1a73e8;">更多</a>
+                <?php endif; ?>
             </div>
         </div>
         
@@ -392,7 +401,14 @@ if ($query) {
             <div class="disclaimer">
                 <strong>免责声明：</strong>本搜索引擎仅收录 2345.lgbt 公开资源，仅供参考。医疗问题请咨询专业医生，本网站不承担任何责任。
             </div>
-            <p>此项目已开源，您可以 <a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank">自己部署</a> | © 2026 2345.desuwa.org | 数据来源：<a href="https://2345.lgbt" target="_blank">2345.lgbt</a></p>
+            <p>
+                <a href="/docs/terms.html">服务条款</a> | 
+                <a href="/docs/privacy.html">隐私政策</a> | 
+                <a href="/docs/disclaimer.html">免责声明</a> | 
+                <a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank">开源</a> | 
+                © 2026 2345.desuwa.org | 
+                数据来源：<a href="https://2345.lgbt" target="_blank">2345.lgbt</a>
+            </p>
         </div>
     </div>
     <script src="search.js"></script>
