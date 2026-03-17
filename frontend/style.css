@@ -41,6 +41,28 @@ body {
     color: #1a73e8;
 }
 
+/* 语言和标签筛选 */
+.lang-link, .tag-link {
+    text-decoration: none;
+    font-size: 13px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #f1f3f4;
+    color: #5f6368;
+    margin-right: 6px;
+    display: inline-block;
+}
+
+.lang-link:hover, .tag-link:hover {
+    background: #e8f0fe;
+    color: #1a73e8;
+}
+
+.lang-link.active, .tag-link.active {
+    background: #1a73e8;
+    color: #fff;
+}
+
 /* 主内容区 */
 .main {
     max-width: 800px;
