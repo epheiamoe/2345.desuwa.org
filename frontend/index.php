@@ -427,6 +427,6 @@ if ($query) {
             </p>
         </div>
     </div>
-    <script src="search.js?v=2"></script>
+    <script src="search.js?v=3"></script>
 </body>
 </html>
