@@ -131,6 +131,9 @@ class MeilisearchPipeline:
         if not doc["title"] or not doc["url"]:
             return item
 
+        # 使用 URL 作为唯一标识符，避免重复
+        doc["uid"] = hash(doc["url"]) % 10000000
+
         # 添加到缓冲区
         self.items_buffer.append(doc)
 

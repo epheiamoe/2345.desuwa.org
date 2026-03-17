@@ -265,6 +265,21 @@ if ($query) {
             color: #1a73e8;
         }
         
+        /* 结果标签 */
+        .result-tags {
+            margin: 4px 0;
+        }
+        
+        .tag-badge {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 4px;
+        }
+        
         /* 搜索结果 */
         .results-info {
             text-align: left;
@@ -461,14 +476,30 @@ if ($query) {
                 </div>
             <?php else: ?>
                 <div class="results-list">
-                    <?php foreach ($results as $result): ?>
+                    <?php foreach ($result as $result): ?>
                         <div class="result-item">
                             <div class="result-title">
                                 <a href="<?php echo htmlspecialchars($result['url']); ?>" target="_blank">
                                     <?php echo !empty($result['_formatted']['title']) ? $result['_formatted']['title'] : htmlspecialchars($result['title']); ?>
                                 </a>
                             </div>
-                            <div class="result-url"><?php echo htmlspecialchars($result['domain']); ?></div>
+                            <div class="result-url">
+                                <?php 
+                                // 显示域名（加粗）+ 完整链接（截断）
+                                $url = $result['url'];
+                                $domain = $result['domain'];
+                                $displayUrl = strlen($url) > 80 ? substr($url, 0, 80) . '...' : $url;
+                                ?>
+                                <strong><?php echo htmlspecialchars($domain); ?></strong>
+                                <span style="color:#545454;"> - <?php echo htmlspecialchars(str_replace($domain, '', $displayUrl)); ?></span>
+                            </div>
+                            <?php if (!empty($result['tags'])): ?>
+                            <div class="result-tags">
+                                <?php foreach ($result['tags'] as $tag): ?>
+                                    <span class="tag-badge"><?php echo htmlspecialchars($tag); ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
                             <div class="result-snippet">
                                 <?php if (!empty($result['_formatted']['content'])): ?>
                                     <?php echo $result['_formatted']['content']; ?>
