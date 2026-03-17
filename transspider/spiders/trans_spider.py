@@ -9,9 +9,25 @@ from urllib.parse import urlparse, urljoin
 import trafilatura
 import sys
 import os
+import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from transspider.config import load_domains, get_random_user_agent
+from transspider.config import load_domains, get_random_user_agent, PROJECT_ROOT
+
+
+def load_domain_tags():
+    """从 domains.json 加载域名对应的标签"""
+    tags_map = {}
+    domains_json = os.path.join(PROJECT_ROOT, "domains.json")
+    if os.path.exists(domains_json):
+        with open(domains_json, encoding="utf-8") as f:
+            data = json.load(f)
+            for item in data.get("domains", []):
+                domain = item.get("domain", "")
+                tags = item.get("tags", [])
+                if domain:
+                    tags_map[domain] = tags
+    return tags_map
 
 
 class TransSpider(scrapy.Spider):
@@ -30,6 +46,7 @@ class TransSpider(scrapy.Spider):
     name = "trans"
     allowed_domains = load_domains()
     start_urls = [f"https://{domain}/" for domain in allowed_domains]
+    domain_tags = load_domain_tags()  # 加载域名标签映射
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -77,6 +94,7 @@ class TransSpider(scrapy.Spider):
             "title": response.css("title::text").get() or "",
             "domain": domain,
             "content": content or "",
+            "tags": self.domain_tags.get(domain, []),  # 从 domains.json 获取标签
         }
 
         # 返回 item 用于 Pipeline 处理

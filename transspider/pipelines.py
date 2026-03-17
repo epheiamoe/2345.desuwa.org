@@ -89,10 +89,12 @@ class MeilisearchPipeline:
                 spider.logger.info(f"创建新索引: {MEILISEARCH_INDEX}")
 
             # 配置索引可搜索属性
-            self.index.update_searchable_attributes(["title", "content", "domain"])
+            self.index.update_searchable_attributes(
+                ["title", "content", "domain", "tags"]
+            )
 
             # 配置筛选属性
-            self.index.update_filterable_attributes(["domain"])
+            self.index.update_filterable_attributes(["domain", "tags"])
 
             # 配置排序属性
             self.index.update_sortable_attributes(["url"])

@@ -19,12 +19,12 @@ $MEILISEARCH_INDEX = 'trans_resources';
 // 可用标签列表（从 domains.json 加载）
 $availableTags = ['MtF', 'FtM', '社区', '性', '知识库', 'HRT', '指南', '报告', '学术', '影视', '音乐', '游戏', '小说', '法律', '医疗'];
 
-// 获取搜索关键词
-$query = isset($_POST['q']) ? trim($_POST['q']) : '';
-$page = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
-$selectedTags = isset($_POST['tags']) ? $_POST['tags'] : [];
+// 获取搜索关键词（改用 GET 方法）
+$query = isset($_GET['q']) ? trim($_GET['q']) : '';
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$selectedTags = isset($_GET['tags']) ? $_GET['tags'] : [];
 if (!is_array($selectedTags)) {
-    $selectedTags = [];
+    $selectedTags = $selectedTags ? [$selectedTags] : [];
 }
 $limit = 10; // 每页显示 10 条
 $offset = ($page - 1) * $limit;
@@ -390,7 +390,7 @@ if ($query) {
     
     <div class="main">
         <div class="search-box">
-            <form method="POST" action="" class="search-form">
+            <form method="GET" action="" class="search-form">
                 <input 
                     type="text" 
                     name="q" 
@@ -450,13 +450,18 @@ if ($query) {
                 </div>
                 
                 <?php
-                // 生成分页
+                // 生成分页（使用 GET 方法）
                 $totalPages = ceil($totalHits / $limit);
                 if ($totalPages > 1):
+                    // 构建基础 URL 参数
+                    $baseParams = 'q=' . urlencode($query);
+                    foreach ($selectedTags as $tag) {
+                        $baseParams .= '&tags[]=' . urlencode($tag);
+                    }
                 ?>
                 <div class="pagination">
                     <?php if ($page > 1): ?>
-                        <a href="javascript:document.getElementById('page').value=<?php echo $page-1; ?>;document.forms[0].submit()">上一页</a>
+                        <a href="?<?php echo $baseParams; ?>&page=<?php echo $page-1; ?>">上一页</a>
                     <?php endif; ?>
                     
                     <?php
@@ -467,15 +472,14 @@ if ($query) {
                         <?php if ($i == $page): ?>
                             <span class="current"><?php echo $i; ?></span>
                         <?php else: ?>
-                            <a href="javascript:document.getElementById('page').value=<?php echo $i; ?>;document.forms[0].submit()"><?php echo $i; ?></a>
+                            <a href="?<?php echo $baseParams; ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
                         <?php endif; ?>
                     <?php endfor; ?>
                     
                     <?php if ($page < $totalPages): ?>
-                        <a href="javascript:document.getElementById('page').value=<?php echo $page+1; ?>;document.forms[0].submit()">下一页</a>
+                        <a href="?<?php echo $baseParams; ?>&page=<?php echo $page+1; ?>">下一页</a>
                     <?php endif; ?>
                 </div>
-                <input type="hidden" name="page" id="page" value="<?php echo $page; ?>">
                 <?php endif; ?>
             <?php endif; ?>
             
