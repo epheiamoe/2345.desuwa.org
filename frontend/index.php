@@ -202,24 +202,26 @@ if ($query) {
                     autofocus
                 >
                 <input type="hidden" name="tags" id="tags-input" value="<?php echo htmlspecialchars(implode(',', $selectedTags)); ?>">
+                <input type="hidden" name="lang" id="lang-input" value="<?php echo htmlspecialchars($selectedLang); ?>">
                 <button type="submit" class="search-btn">搜索</button>
-                
-                <!-- 语言筛选 -->
-                <div class="tag-filter" style="margin-top:10px;">
-                    <span style="color:#666;font-size:13px;margin-right:10px;">语言：</span>
-                    <?php foreach ($availableLanguages as $langCode => $langName): ?>
-                        <label>
-                            <input type="radio" name="lang" value="<?php echo htmlspecialchars($langCode); ?>"
-                                <?php echo $selectedLang === $langCode ? 'checked' : ''; ?>>
-                            <span><?php echo htmlspecialchars($langName); ?></span>
-                        </label>
-                    <?php endforeach; ?>
-                    <label>
-                        <input type="radio" name="lang" value="" <?php echo $selectedLang === '' ? 'checked' : ''; ?>>
-                        <span>全部</span>
-                    </label>
-                </div>
             </form>
+            
+            <!-- 语言筛选（搜索框下方） -->
+            <div class="tag-filter" style="margin-top:8px;">
+                <span style="color:#666;font-size:13px;margin-right:8px;">语言：</span>
+                <?php foreach ($availableLanguages as $langCode => $langName): ?>
+                    <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?>&lang=<?php echo urlencode($langCode); ?>" 
+                       class="lang-link <?php echo $selectedLang === $langCode ? 'active' : ''; ?>"
+                       style="margin-right:10px;<?php echo $selectedLang === $langCode ? 'font-weight:bold;color:#1a73e8;' : 'color:#666;'; ?>">
+                        <?php echo htmlspecialchars($langName); ?>
+                    </a>
+                <?php endforeach; ?>
+                <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?>" 
+                   class="lang-link <?php echo $selectedLang === '' ? 'active' : ''; ?>"
+                   style="margin-right:10px;<?php echo $selectedLang === '' ? 'font-weight:bold;color:#1a73e8;' : 'color:#666;'; ?>">
+                    全部
+                </a>
+            </div>
             
             <?php if (!$query): ?>
             <p style="margin-top:15px;color:#666;font-size:14px;">共收录 <?php echo number_format($totalDocs); ?> 条跨性别资源</p>
@@ -227,14 +229,27 @@ if ($query) {
             
             <!-- 标签筛选 -->
             <div class="tag-filter">
-                <?php foreach ($availableTags as $tag): ?>
-                    <label>
-                        <input type="checkbox" class="tag-checkbox" value="<?php echo htmlspecialchars($tag); ?>"
-                            <?php echo in_array($tag, $selectedTags) ? 'checked' : ''; ?>>
-                        <span><?php echo htmlspecialchars($tag); ?></span>
-                    </label>
+            <!-- 标签筛选 -->
+            <div class="tag-filter">
+                <span style="color:#666;font-size:13px;margin-right:8px;">标签：</span>
+                <?php foreach ($availableTags as $i => $tag): ?>
+                    <?php if ($i >= 8): ?>
+                    <span class="tag-more" style="display:none;">
+                    <?php endif; ?>
+                    <a href="?q=<?php echo urlencode($query); ?><?php echo $selectedLang ? '&lang=' . urlencode($selectedLang) : ''; ?>&tags=<?php echo urlencode($tag); ?>" 
+                       class="tag-link <?php echo in_array($tag, $selectedTags) ? 'active' : ''; ?>"
+                       style="margin-right:8px;padding:2px 8px;border-radius:4px;<?php echo in_array($tag, $selectedTags) ? 'background:#1a73e8;color:#fff;' : 'background:#f1f3f4;color:#333;'; ?>">
+                        <?php echo htmlspecialchars($tag); ?>
+                    </a>
+                    <?php if ($i >= 7): ?>
+                    </span>
+                    <?php endif; ?>
                 <?php endforeach; ?>
+                <?php if (count($availableTags) > 8): ?>
+                <a href="javascript:void(0)" onclick="document.querySelectorAll('.tag-more').forEach(el=>el.style.display='inline');this.style.display='none'" style="font-size:12px;color:#1a73e8;">更多</a>
+                <?php endif; ?>
             </div>
+        </div>
         </div>
         
         <?php if ($error): ?>
