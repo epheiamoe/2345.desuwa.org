@@ -1,6 +1,6 @@
 # 跨性别资源搜索引擎 (2345.desuwa.org)
 
-> 只收录 2345.lgbt 导航站资源的专属搜索引擎
+> 只收录 2345.lgbt 导航站资源的专属搜索引擎，[前往他们的仓库](https://github.com/project-trans/2345.LGBT)
 
 ## 项目简介
 
@@ -165,15 +165,7 @@ docker-compose up -d
 
 ## AI 概览功能（TODO）
 
-当前版本已预留接口，后续将接入 Ollama 实现 AI 智能摘要。
-
-```php
-<!-- TODO: LLM 概览 -->
-<div class="ai-overview">
-    <h3>AI 智能摘要（开发中）</h3>
-    <p>此功能正在开发中...</p>
-</div>
-```
+当前版本已预留接口，后续将接入 LLM 实现 AI 智能摘要。
 
 ## 安全配置
 

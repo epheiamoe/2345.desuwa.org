@@ -16,9 +16,16 @@ $MEILISEARCH_HOST = getenv('MEILISEARCH_HOST') ?: 'localhost';
 $MEILISEARCH_PORT = getenv('MEILISEARCH_PORT') ?: '7700';
 $MEILISEARCH_INDEX = 'trans_resources';
 
+// 可用标签列表（从 domains.json 加载）
+$availableTags = ['MtF', 'FtM', '社区', '性', '知识库', 'HRT', '指南', '报告', '学术', '影视', '音乐', '游戏', '小说', '法律', '医疗'];
+
 // 获取搜索关键词
 $query = isset($_POST['q']) ? trim($_POST['q']) : '';
 $page = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
+$selectedTags = isset($_POST['tags']) ? $_POST['tags'] : [];
+if (!is_array($selectedTags)) {
+    $selectedTags = [];
+}
 $limit = 10; // 每页显示 10 条
 $offset = ($page - 1) * $limit;
 $results = [];
@@ -55,7 +62,8 @@ if ($query) {
     if (!$error) {
         $url = "http://{$MEILISEARCH_HOST}:{$MEILISEARCH_PORT}/indexes/{$MEILISEARCH_INDEX}/search";
         
-        $postData = json_encode([
+        // 构建搜索参数
+        $searchParams = [
             'q' => $query,
             'limit' => $limit,
             'offset' => $offset,
@@ -64,7 +72,18 @@ if ($query) {
             'highlightPostTag' => '</em>',
             'attributesToCrop' => ['content'],
             'cropLength' => 200,
-        ]);
+        ];
+        
+        // 添加标签筛选
+        if (!empty($selectedTags)) {
+            $filters = [];
+            foreach ($selectedTags as $tag) {
+                $filters[] = "tags = '{$tag}'";
+            }
+            $searchParams['filter'] = implode(' OR ', $filters);
+        }
+        
+        $postData = json_encode($searchParams);
         
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -188,6 +207,45 @@ if ($query) {
         
         .search-btn:hover {
             background: #1557b0;
+        }
+        
+        /* 标签筛选 */
+        .tag-filter {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .tag-filter label {
+            display: inline-block;
+            padding: 4px 12px;
+            border: 1px solid #dfe1e5;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tag-filter label:hover {
+            background: #f1f3f4;
+        }
+        
+        .tag-filter input[type="checkbox"] {
+            display: none;
+        }
+        
+        .tag-filter input[type="checkbox"]:checked + span {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .tag-filter label:has(input:checked) {
+            background: #e8f0fe;
+            border-color: #1a73e8;
+            color: #1a73e8;
         }
         
         /* 搜索结果 */
@@ -343,6 +401,17 @@ if ($query) {
                 >
                 <button type="submit" class="search-btn">搜索</button>
             </form>
+            
+            <!-- 标签筛选 -->
+            <div class="tag-filter">
+                <?php foreach ($availableTags as $tag): ?>
+                    <label>
+                        <input type="checkbox" name="tags[]" value="<?php echo htmlspecialchars($tag); ?>"
+                            <?php echo in_array($tag, $selectedTags) ? 'checked' : ''; ?>>
+                        <span><?php echo htmlspecialchars($tag); ?></span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
         </div>
         
         <?php if ($error): ?>
@@ -413,7 +482,7 @@ if ($query) {
             <!-- TODO: LLM 概览区域 -->
             <div class="ai-overview">
                 <h3>AI 智能摘要（开发中）</h3>
-                <p>此功能正在开发中，预计后续版本将提供基于 Ollama 的智能摘要功能。</p>
+                <p>此功能正在开发中，预计后续版本将提供LLM智能摘要功能。</p>
             </div>
         <?php endif; ?>
     </div>
@@ -423,7 +492,7 @@ if ($query) {
             <div class="disclaimer">
                 <strong>免责声明：</strong>本搜索引擎仅收录 2345.lgbt 公开资源，仅供参考。医疗问题请咨询专业医生，本网站不承担任何责任。
             </div>
-            <p>© 2024 2345.desuwa.org | 数据来源：<a href="https://2345.lgbt" target="_blank">2345.lgbt</a></p>
+            <p>© 2026 2345.desuwa.org | 数据来源：<a href="https://2345.lgbt" target="_blank">2345.lgbt</a></p>
         </div>
     </div>
 </body>
