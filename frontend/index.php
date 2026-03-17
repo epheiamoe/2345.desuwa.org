@@ -393,6 +393,7 @@ if ($query) {
         <a href="/" class="logo">2345.desuwa.org</a>
         <div class="nav-links">
             <a href="https://2345.lgbt" target="_blank">2345.lgbt 导航站</a>
+            <a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank" style="color:#1a73e8;">⭐ 开源</a>
         </div>
     </div>
     
@@ -513,7 +514,7 @@ if ($query) {
             <div class="disclaimer">
                 <strong>免责声明：</strong>本搜索引擎仅收录 2345.lgbt 公开资源，仅供参考。医疗问题请咨询专业医生，本网站不承担任何责任。
             </div>
-            <p>© 2026 2345.desuwa.org | 数据来源：<a href="https://2345.lgbt" target="_blank">2345.lgbt</a></p>
+            <p>此项目已开源，您可以 <a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank">自己部署</a> | © 2026 2345.desuwa.org | 数据来源：<a href="https://2345.lgbt" target="_blank">2345.lgbt</a></p>
         </div>
     </div>
 </body>
