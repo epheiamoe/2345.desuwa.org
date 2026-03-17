@@ -46,6 +46,10 @@ domains.txt        # 包含所有链接
 *.json             # 爬取数据
 httpcache/         # 爬虫缓存
 
+# API 配置
+api/.env
+api/db.json
+
 # Docker
 .docker/
 
