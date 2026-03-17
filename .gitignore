@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Scrapy
+.scrapy/
+*.log
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 项目特定
+2345-lgbt-repo/     # 克隆的仓库，独立管理
+domains.txt         # 包含所有链接
+*.json              # 爬取数据
+httpcache/          # 爬虫缓存
+
+# Docker
+.docker/
+
+# 临时文件
+*.tmp
+temp/

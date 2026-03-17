@@ -1,0 +1,5 @@
+# 测试用域名列表（只保留 3 个核心域名用于快速测试）
+# 完整域名列表见 domains.txt
+mtf.wiki
+ftm.wiki
+hrt.guide
