@@ -5,18 +5,16 @@
 """
 
 import scrapy
-from urllib.parse import urlparse
-from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import CrawlSpider, Rule
+from urllib.parse import urlparse, urljoin
+import trafilatura
 import sys
 import os
 
-# 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from transspider.config import load_domains, get_random_user_agent
 
 
-class TransSpider(CrawlSpider):
+class TransSpider(scrapy.Spider):
     """
     跨性别资源爬虫
 
@@ -25,87 +23,89 @@ class TransSpider(CrawlSpider):
     - 遵守 robots.txt
     - 随机延迟 1-3 秒
     - 随机 User-Agent
+    - 使用 trafilatura 提取正文
+    - 手动管理待爬队列
     """
 
     name = "trans"
     allowed_domains = load_domains()
-
-    # 从域名生成起始 URL
     start_urls = [f"https://{domain}/" for domain in allowed_domains]
 
-    # 允许的链接提取规则：只 follow 同域链接
-    rules = (
-        Rule(
-            LinkExtractor(
-                allow_domains=allowed_domains,
-                deny_extensions=[
-                    "jpg",
-                    "jpeg",
-                    "png",
-                    "gif",
-                    "pdf",
-                    "zip",
-                    "mp3",
-                    "mp4",
-                    "avi",
-                ],
-            ),
-            callback="parse_item",
-            follow=True,
-        ),
-    )
-
     def __init__(self, *args, **kwargs):
-        """初始化爬虫"""
-        super(TransSpider, self).__init__(*args, **kwargs)
-        self.custom_settings = {
-            "USER_AGENT": get_random_user_agent(),
-        }
+        super().__init__(*args, **kwargs)
+        self.seen_urls = set()
+        self.page_count = 0
+        self.max_pages = 100  # 最多爬取 100 个页面
 
-    def start_requests(self):
-        """
-        重写起始请求，添加随机 User-Agent
-        """
-        for url in self.start_urls:
-            yield scrapy.Request(
-                url,
-                callback=self.parse_start_url,
-                headers={"User-Agent": get_random_user_agent()},
-            )
+    def parse(self, response):
+        """解析页面"""
+        url = response.url
 
-    def parse_start_url(self, response):
-        """
-        处理起始 URL
-        """
-        return self.parse_item(response)
+        # 跳过已爬过的 URL
+        if url in self.seen_urls:
+            return
+        self.seen_urls.add(url)
 
-    def parse_item(self, response):
-        """
-        解析页面内容
+        # 检查是否超过最大页面数
+        if self.page_count >= self.max_pages:
+            self.logger.info(f"已达到最大页面数 {self.max_pages}，停止爬取")
+            return
 
-        提取：
-        - URL
-        - 标题
-        - 正文内容（通过 Pipeline 处理）
-        - 域名
-        """
+        self.page_count += 1
+        self.logger.info(f"爬取 {self.page_count}/{self.max_pages}: {url}")
+
         # 提取域名
-        domain = urlparse(response.url).netloc
+        domain = urlparse(url).netloc
         if domain.startswith("www."):
             domain = domain[4:]
 
+        # 使用 trafilatura 提取正文
+        content = ""
+        try:
+            content = trafilatura.extract(
+                response.text,
+                url=url,
+                include_comments=False,
+                include_tables=False,
+            )
+        except Exception as e:
+            self.logger.warning(f"正文提取失败 {url}: {e}")
+
         # 创建 Item
         item = {
-            "url": response.url,
+            "url": url,
             "title": response.css("title::text").get() or "",
             "domain": domain,
-            "content": "",  # 正文由 Pipeline 提取
+            "content": content or "",
         }
 
-        return item
+        # 返回 item 用于 Pipeline 处理
+        yield item
 
-    def _set_user_agent(self, request, spider):
-        """
-        中间件回调：设置随机 User-Agent
-        """
-        request.headers["User-Agent"] = get_random_user_agent()
+        # 提取更多链接
+        if self.page_count < self.max_pages:
+            # 从页面中提取链接
+            links = response.css("a::attr(href)").getall()
+
+            for link in links:
+                # 跳过空链接和锚点
+                if not link or link.startswith("#"):
+                    continue
+
+                # 处理相对路径
+                if not link.startswith("http"):
+                    link = urljoin(response.url, link)
+
+                # 只爬取同域名的链接
+                parsed = urlparse(link)
+                link_domain = parsed.netloc
+                if link_domain.startswith("www."):
+                    link_domain = link_domain[4:]
+
+                # 只爬取 allowed_domains 中的域名
+                if link_domain in self.allowed_domains and link not in self.seen_urls:
+                    yield scrapy.Request(
+                        link,
+                        callback=self.parse,
+                        headers={"User-Agent": get_random_user_agent()},
+                    )

@@ -18,6 +18,9 @@ $MEILISEARCH_INDEX = 'trans_resources';
 
 // 获取搜索关键词
 $query = isset($_POST['q']) ? trim($_POST['q']) : '';
+$page = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
+$limit = 10; // 每页显示 10 条
+$offset = ($page - 1) * $limit;
 $results = [];
 $totalHits = 0;
 $searchTime = 0;
@@ -54,7 +57,8 @@ if ($query) {
         
         $postData = json_encode([
             'q' => $query,
-            'limit' => 20,
+            'limit' => $limit,
+            'offset' => $offset,
             'attributesToHighlight' => ['title', 'content'],
             'highlightPreTag' => '<em>',
             'highlightPostTag' => '</em>',
@@ -200,6 +204,32 @@ if ($query) {
         
         .result-item {
             margin-bottom: 30px;
+        }
+        
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 30px 0;
+        }
+        
+        .pagination a, .pagination span {
+            padding: 8px 16px;
+            border: 1px solid #dfe1e5;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #1a73e8;
+        }
+        
+        .pagination a:hover {
+            background: #f1f3f4;
+        }
+        
+        .pagination .current {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
         }
         
         .result-title {
@@ -349,6 +379,35 @@ if ($query) {
                         </div>
                     <?php endforeach; ?>
                 </div>
+                
+                <?php
+                // 生成分页
+                $totalPages = ceil($totalHits / $limit);
+                if ($totalPages > 1):
+                ?>
+                <div class="pagination">
+                    <?php if ($page > 1): ?>
+                        <a href="javascript:document.getElementById('page').value=<?php echo $page-1; ?>;document.forms[0].submit()">上一页</a>
+                    <?php endif; ?>
+                    
+                    <?php
+                    $startPage = max(1, $page - 2);
+                    $endPage = min($totalPages, $page + 2);
+                    for ($i = $startPage; $i <= $endPage; $i++):
+                    ?>
+                        <?php if ($i == $page): ?>
+                            <span class="current"><?php echo $i; ?></span>
+                        <?php else: ?>
+                            <a href="javascript:document.getElementById('page').value=<?php echo $i; ?>;document.forms[0].submit()"><?php echo $i; ?></a>
+                        <?php endif; ?>
+                    <?php endfor; ?>
+                    
+                    <?php if ($page < $totalPages): ?>
+                        <a href="javascript:document.getElementById('page').value=<?php echo $page+1; ?>;document.forms[0].submit()">下一页</a>
+                    <?php endif; ?>
+                </div>
+                <input type="hidden" name="page" id="page" value="<?php echo $page; ?>">
+                <?php endif; ?>
             <?php endif; ?>
             
             <!-- TODO: LLM 概览区域 -->

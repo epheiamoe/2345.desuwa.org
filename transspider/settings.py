@@ -6,11 +6,6 @@ BOT_NAME = "transspider"
 SPIDER_MODULES = ["transspider.spiders"]
 NEWSPIDER_MODULE = "transspider.spiders"
 
-# 启用自动提取插件
-ADDONS = {
-    "scrapy_addons.content_extractor.Addon": 500,
-}
-
 # ============================================================================
 # 用户代理配置
 # ============================================================================

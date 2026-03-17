@@ -54,8 +54,10 @@ class MeilisearchPipeline:
 
     def __init__(self):
         """初始化 Meilisearch 客户端"""
+        # 开发模式使用空字符串作为 API key
+        api_key = MEILISEARCH_API_KEY if MEILISEARCH_API_KEY else ""
         self.client = meilisearch.Client(
-            f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}", MEILISEARCH_API_KEY
+            f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}", api_key
         )
         self.index = None
         self.items_buffer = []
