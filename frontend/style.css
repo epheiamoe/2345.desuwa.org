@@ -29,6 +29,29 @@ body {
 .nav-links {
     display: flex;
     gap: 20px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+    .header {
+        padding: 15px 20px;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .nav-links {
+        gap: 12px;
+        justify-content: flex-start;
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    
+    .nav-links a {
+        white-space: nowrap;
+    }
 }
 
 .nav-links a {

@@ -59,3 +59,4 @@ temp/
 
 # 搜索测试数据
 temp_docs.json
+backup_meilisearch.json

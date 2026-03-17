@@ -21,6 +21,8 @@ $availableTags = ['MtF', 'FtM', '社区', '性', '知识库', 'HRT', '指南', '
 
 // 可用语言列表
 $availableLanguages = [
+    'zh-cn' => '简体中文',
+    'zh-hant' => '繁體中文',
     'zh' => '中文',
     'en' => 'English',
     'ja' => '日本語',
@@ -148,9 +150,11 @@ if ($query) {
                 $filteredResults = [];
                 foreach ($results as $r) {
                     $url = $r['url'] ?? '';
-                    $lang = 'zh';  // 默认中文
-                    if (preg_match('/\/zh-(cn|tw|hk|hant)\//', $url)) {
-                        $lang = 'zh';
+                    $lang = 'zh-cn';  // 默认中文简体
+                    if (preg_match('/\/zh-hant\//', $url) || preg_match('/\/zh-tw\//', $url) || preg_match('/\/zh-hk\//', $url)) {
+                        $lang = 'zh-hant';
+                    } elseif (preg_match('/\/zh-cn\//', $url) || preg_match('/\/zh-\w+\//', $url)) {
+                        $lang = 'zh-cn';
                     } elseif (preg_match('/\/en\//', $url)) {
                         $lang = 'en';
                     } elseif (preg_match('/\/ja\//', $url)) {
@@ -160,7 +164,16 @@ if ($query) {
                     } elseif (preg_match('/\/nl\//', $url)) {
                         $lang = 'nl';
                     }
-                    if ($lang === $selectedLang) {
+                    
+                    // 兼容处理：zh = 所有中文
+                    $match = false;
+                    if ($selectedLang === 'zh') {
+                        $match = in_array($lang, ['zh-cn', 'zh-hant']);
+                    } else {
+                        $match = ($lang === $selectedLang);
+                    }
+                    
+                    if ($match) {
                         $filteredResults[] = $r;
                     }
                 }
@@ -187,6 +200,8 @@ if ($query) {
         <div class="nav-links">
             <a href="https://2345.lgbt" target="_blank">2345.lgbt 导航站</a>
             <a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank" style="color:#1a73e8;">⭐ 开源</a>
+            <a href="/api/console.html" target="_blank">API 控制台</a>
+            <a href="/docs/api.html" target="_blank">API 文档</a>
         </div>
     </div>
     

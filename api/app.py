@@ -375,16 +375,24 @@ def search():
         for h in hits:
             url = h.get("url", "")
 
-            # 检测语言
+            # 检测语言和脚本
             doc_lang = "zh"
-            doc_script = "simplified"
+            doc_script = "simplified"  # simplified, traditional
 
-            if "/zh-" in url or url.endswith("/zh"):
-                doc_lang = "zh"
-                if "hant" in url or "tw" in url or "hk" in url:
-                    doc_script = "traditional"
-                else:
-                    doc_script = "simplified"
+            if "/zh-hant" in url or "/zh-tw" in url or "/zh-hk" in url:
+                doc_lang = "zh-hant"
+                doc_script = "traditional"
+            elif "/zh-cn" in url:
+                doc_lang = "zh-cn"
+                doc_script = "simplified"
+            elif "/zh-" in url:
+                # 其他 /zh-xx 如 /zh-hans
+                doc_lang = "zh-cn"
+                doc_script = "simplified"
+            elif url.endswith("/zh") or "/zh/" in url:
+                # 可能是 /zh 或 /zh/xxx
+                doc_lang = "zh-cn"
+                doc_script = "simplified"
             elif "/en/" in url:
                 doc_lang = "en"
             elif "/ja/" in url:
@@ -395,11 +403,18 @@ def search():
                 doc_lang = "nl"
             else:
                 # 无语言路径，默认中文简体
-                doc_lang = "zh"
+                doc_lang = "zh-cn"
                 doc_script = "simplified"
 
             # 检查语言筛选
-            lang_match = lang == "all" or doc_lang == lang
+            # zh = 简体+繁体 (兼容), zh-cn = 简体, zh-hant = 繁体
+            if lang == "all":
+                lang_match = True
+            elif lang == "zh":
+                # 兼容旧版本：zh 代表所有中文
+                lang_match = doc_lang in ("zh-cn", "zh-hant")
+            else:
+                lang_match = doc_lang == lang
 
             # 检查简繁体筛选
             script_match = script == "all" or doc_script == script

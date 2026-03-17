@@ -29,7 +29,7 @@ GET /api/search
 | q | string | 是 | - | 搜索关键词 |
 | limit | int | 否 | 10 | 返回结果数量 (1-20) |
 | offset | int | 否 | 0 | 起始位置（用于分页） |
-| lang | string | 否 | all | 语言筛选：zh, en, ja, es, nl, all |
+| lang | string | 否 | all | 语言筛选：zh-cn, zh-hant, zh, en, ja, es, nl, all |
 | script | string | 否 | all | 中文简繁体：simplified, traditional, all |
 | domain | string | 否 | - | 站点筛选（如 mtf.wiki） |
 | tags | string | 否 | - | 标签筛选，逗号分隔 |

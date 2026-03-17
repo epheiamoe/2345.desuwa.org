@@ -22,6 +22,7 @@
 - **爬虫**: Python + Scrapy
 - **搜索引擎**: Meilisearch (Docker)
 - **前端**: 纯 PHP
+- **API**: Flask + GitHub OAuth
 
 ### 数据来源
 
@@ -151,6 +152,21 @@ $MEILISEARCH_INDEX = 'trans_resources';
 https://2345.desuwa.org/?q=关键词
 ```
 
+### 语言筛选
+
+```
+# 只显示简体中文
+https://2345.desuwa.org/?q=激素&lang=zh-cn
+
+# 只显示繁体中文
+https://2345.desuwa.org/?q=激素&lang=zh-hant
+
+# 显示所有中文
+https://2345.desuwa.org/?q=激素&lang=zh
+```
+
+可用语言：zh-cn（简体中文）、zh-hant（繁体中文）、zh（所有中文）、en、ja、es、nl
+
 ### 标签筛选
 
 ```
@@ -165,20 +181,79 @@ https://2345.desuwa.org/?q=HRT&tags=MtF,FtM
 
 ---
 
+## API 服务
+
+项目提供免费的 REST API，支持 GitHub OAuth 登录。
+
+### 功能
+
+- 🔑 GitHub OAuth 登录
+- 📊 每月 2000 次调用配额
+- ⚡ 每分钟 10 次请求限制
+- 🏷️ 支持标签、语言筛选
+
+### 部署 API 服务
+
+```bash
+# 1. 进入 API 目录
+cd api
+
+# 2. 复制环境配置
+cp env.example .env
+
+# 3. 编辑 .env 文件，配置以下内容：
+# - GITHUB_CLIENT_ID: GitHub OAuth App Client ID
+# - GITHUB_CLIENT_SECRET: GitHub OAuth App Client Secret
+# - FLASK_SECRET: Flask session 密钥
+# - ADMIN_USERS: 管理员 GitHub 用户名（逗号分隔）
+
+# 4. 安装依赖
+pip install -r requirements.txt
+
+# 5. 启动服务
+python app.py
+```
+
+### GitHub OAuth 配置
+
+1. 访问 [GitHub Developer Settings](https://github.com/settings/developers)
+2. 创建 OAuth App：
+   - Homepage URL: `https://your-domain.com`
+   - Callback URL: `https://your-domain.com/api/auth/callback`
+3. 将 Client ID 和 Secret 填入 `.env`
+
+### API 使用
+
+详见 [API 文档](docs/API.md)
+
+```bash
+# 搜索示例
+curl "https://2345.desuwa.org/api/search?q=HRT" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+---
+
 ## 目录结构
 
 ```
 2345.desuwa.org/
 ├── frontend/              # PHP 前端
-│   └── index.php          # 搜索页面
+│   ├── index.php         # 搜索页面
+│   ├── style.css         # 样式
+│   └── search.js         # 前端脚本
 ├── transspider/           # Scrapy 爬虫
-│   ├── spiders/          # 爬虫代码
-│   ├── pipelines.py       # Meilisearch 推送
-│   └── config.py         # 配置
+│   ├── spiders/           # 爬虫代码
+│   ├── pipelines.py      # Meilisearch 推送
+│   └── config.py          # 配置
+├── api/                   # Flask API 服务
+│   ├── app.py             # 主程序
+│   ├── console.html       # API 控制台
+│   └── env.example        # 环境配置示例
+├── docs/                  # 文档
 ├── domains.json          # 域名和标签列表
 ├── domains_test.txt      # 测试用域名
 ├── docker-compose.yml    # Meilisearch Docker
-├── DEPLOY.md             # 部署文档
 └── README.md
 ```
 
