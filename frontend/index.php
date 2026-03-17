@@ -236,7 +236,13 @@ if ($query) {
                     <?php foreach ($results as $result): ?>
                         <div class="result-item">
                             <div class="result-title">
-                                <a href="<?php echo htmlspecialchars($result['url']); ?>" target="_blank">
+                                <?php 
+                                $linkUrl = $result['url'];
+                                if (!preg_match('/^https?:\/\/[^\/]+\//i', $linkUrl)) {
+                                    $linkUrl = 'https://' . ($result['domain'] ?? '');
+                                }
+                                ?>
+                                <a href="<?php echo htmlspecialchars($linkUrl); ?>" target="_blank">
                                     <?php echo !empty($result['_formatted']['title']) ? $result['_formatted']['title'] : htmlspecialchars($result['title']); ?>
                                 </a>
                             </div>
@@ -245,6 +251,15 @@ if ($query) {
                                 // 显示域名（加粗）+ 完整链接（截断）
                                 $url = $result['url'];
                                 $domain = $result['domain'];
+                                
+                                // 检查 URL 是否有效（必须有有效的 scheme 和 host）
+                                $urlValid = !empty($url) && preg_match('/^https?:\/\/[^\/]+\//i', $url);
+                                
+                                if (!$urlValid) {
+                                    // URL 无效，使用 domain + path 组合
+                                    $url = 'https://' . $domain . '/';
+                                }
+                                
                                 $displayUrl = strlen($url) > 80 ? substr($url, 0, 80) . '...' : $url;
                                 ?>
                                 <strong><?php echo htmlspecialchars($domain); ?></strong>
