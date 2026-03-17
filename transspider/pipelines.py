@@ -59,7 +59,7 @@ class MeilisearchPipeline:
         )
         self.index = None
         self.items_buffer = []
-        self.batch_size = 100
+        self.batch_size = 10  # 减少批量大小便于测试
 
     def open_spider(self, spider):
         """
@@ -76,23 +76,31 @@ class MeilisearchPipeline:
             try:
                 self.index = self.client.get_index(MEILISEARCH_INDEX)
                 spider.logger.info(f"使用已有索引: {MEILISEARCH_INDEX}")
-
             except Exception:
                 self.index = self.client.create_index(
-                    MEILISEARCH_INDEX, {"primaryKey": "url"}
+                    MEILISEARCH_INDEX, {"primaryKey": "id"}
                 )
                 spider.logger.info(f"创建新索引: {MEILISEARCH_INDEX}")
 
-            # 配置索引可搜索属性
-            self.index.update_searchable_attributes(
-                ["title", "content", "domain", "tags"]
-            )
+            # 配置索引可搜索属性（忽略返回值）
+            try:
+                self.index.update_searchable_attributes(
+                    ["title", "content", "domain", "tags"]
+                )
+            except Exception as e:
+                spider.logger.warning(f"设置 searchable_attributes 失败: {e}")
 
             # 配置筛选属性
-            self.index.update_filterable_attributes(["domain", "tags"])
+            try:
+                self.index.update_filterable_attributes(["domain", "tags"])
+            except Exception as e:
+                spider.logger.warning(f"设置 filterable_attributes 失败: {e}")
 
             # 配置排序属性
-            self.index.update_sortable_attributes(["url"])
+            try:
+                self.index.update_sortable_attributes(["url"])
+            except Exception as e:
+                spider.logger.warning(f"设置 sortable_attributes 失败: {e}")
 
             spider.logger.info("Meilisearch 索引配置完成")
 
@@ -104,15 +112,19 @@ class MeilisearchPipeline:
         """
         处理每个 Item
 
-        将数据推送到 Meilisearch（使用 URL 作为 primary key，实现更新而非重复新增）
+        将数据推送到 Meilisearch
         """
         if self.index is None:
             spider.logger.warning("Meilisearch 未初始化，跳过推送")
             return item
 
-        # 提取有用信息
+        # 使用 URL 的 hash 作为唯一 ID（因为 URL 包含非法字符）
+        url = item.get("url", "")
+        doc_id = abs(hash(url)) % 100000000
+
         doc = {
-            "url": item.get("url", ""),
+            "id": doc_id,
+            "url": url,
             "title": item.get("title", "").strip(),
             "content": item.get("content", "").strip()[:5000],
             "domain": item.get("domain", ""),
@@ -120,14 +132,12 @@ class MeilisearchPipeline:
             "crawled_at": datetime.now().isoformat(),
         }
 
-        # 跳过空标题或无效 URL
         if not doc["title"] or not doc["url"]:
+            spider.logger.warning(f"跳过空标题或无效URL: {url}")
             return item
 
-        # 添加到缓冲区
         self.items_buffer.append(doc)
 
-        # 达到批量大小时推送
         if len(self.items_buffer) >= self.batch_size:
             self._flush_items(spider)
 

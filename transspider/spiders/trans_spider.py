@@ -52,7 +52,7 @@ class TransSpider(scrapy.Spider):
         super().__init__(*args, **kwargs)
         self.seen_urls = set()
         self.page_count = 0
-        self.max_pages = 100  # 最多爬取 100 个页面
+        self.max_pages = 10000  # 允许爬取足够多的页面
 
     def parse(self, response):
         """解析页面"""

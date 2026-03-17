@@ -261,8 +261,9 @@ if ($query) {
                                 }
                                 
                                 $displayUrl = strlen($url) > 80 ? substr($url, 0, 80) . '...' : $url;
-                                $urlPath = str_replace($domain, '', $displayUrl);
-                                if (strpos($urlPath, 'https://') === 0 || strpos($urlPath, 'http://') === 0) {
+                                // 移除域名部分，只保留路径
+                                $urlPath = preg_replace('/^https?:\/\/' . preg_quote($domain, '/') . '/i', '', $displayUrl);
+                                if ($urlPath === $displayUrl || $urlPath === '') {
                                     $urlPath = '/';
                                 }
                                 ?>
