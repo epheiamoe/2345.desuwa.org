@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 控制台 - 2345.desuwa.org</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .content { max-width: 900px; margin: 40px auto; padding: 20px; }
+        h1 { color: #1a73e8; margin-bottom: 20px; }
+        .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .card h2 { margin-top: 0; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #1a73e8; color: #fff; }
+        .btn-danger { background: #d93025; color: #fff; }
+        .btn-success { background: #1e8e3e; color: #fff; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f5f5f5; }
+        .banned { color: #d93025; font-weight: bold; }
+        .active { color: #1e8e3e; font-weight: bold; }
+        .api-key { background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; word-break: break-all; }
+        .tab { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+        .tab-item { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .tab-item.active { border-bottom-color: #1a73e8; color: #1a73e8; }
+        .error { color: #d93025; background: #fce8e6; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .success { color: #1e8e3e; background: #e6f4ea; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="logo">2345.desuwa.org</a>
+    </div>
+    
+    <div class="content">
+        <h1>API 控制台</h1>
+        
+        <div id="message"></div>
+        
+        <div class="tab">
+            <div class="tab-item active" onclick="showTab('keys')">我的 API Key</div>
+            <div class="tab-item" onclick="showTab('search')">搜索测试</div>
+            <div class="tab-item" onclick="showTab('admin')" id="adminTab" style="display:none;">管理面板</div>
+        </div>
+        
+        <!-- 我的 API Key -->
+        <div id="keysTab">
+            <div class="card">
+                <h2>我的 API Key</h2>
+                <p>使用此 Key 访问 API：</p>
+                <div class="api-key" id="apiKey">加载中...</div>
+                <p style="margin-top:10px;">
+                    <button class="btn btn-danger" onclick="regenerateKey()">重新生成 Key</button>
+                </p>
+            </div>
+            
+            <div class="card">
+                <h2>使用统计</h2>
+                <p>已使用额度：<strong id="creditsUsed">-</strong></p>
+                <p>剩余额度：<strong id="creditsRemaining">-</strong></p>
+            </div>
+        </div>
+        
+        <!-- 搜索测试 -->
+        <div id="searchTab" style="display:none;">
+            <div class="card">
+                <h2>API 测试</h2>
+                <div class="form-group">
+                    <label>搜索关键词</label>
+                    <input type="text" id="searchQuery" placeholder="输入搜索词" value="HRT">
+                </div>
+                <div class="form-group">
+                    <label>语言筛选</label>
+                    <select id="searchLang" style="width:100%;padding:8px;">
+                        <option value="">全部</option>
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="testSearch()">搜索</button>
+                
+                <h3 style="margin-top:20px;">结果</h3>
+                <pre id="searchResult" style="background:#f5f5f5;padding:10px;overflow:auto;max-height:400px;">-</pre>
+            </div>
+        </div>
+        
+        <!-- 管理面板 -->
+        <div id="adminTabContent" style="display:none;">
+            <div class="card">
+                <h2>用户管理</h2>
+                <button class="btn btn-primary" onclick="loadUsers()">刷新用户列表</button>
+                <table style="margin-top:15px;">
+                    <thead>
+                        <tr>
+                            <th>GitHub</th>
+                            <th>注册时间</th>
+                            <th>已用额度</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userList">
+                        <tr><td colspan="5">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let apiKey = '';
+        
+        // 从 URL 获取 token
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (!token) {
+            // 没有 token，跳转登录
+            window.location.href = '/api/auth/login';
+        }
+        
+        async function apiRequest(url, options = {}) {
+            options.headers = options.headers || {};
+            options.headers['Authorization'] = 'Bearer ' + token;
+            const resp = await fetch(url, options);
+            return resp.json();
+        }
+        
+        async function loadKeyInfo() {
+            const data = await apiRequest('/api/keys');
+            if (data.error) {
+                showMessage(data.error, 'error');
+                return;
+            }
+            apiKey = data.api_key;
+            document.getElementById('apiKey').textContent = data.api_key;
+            document.getElementById('creditsUsed').textContent = data.credits_used;
+            document.getElementById('creditsRemaining').textContent = data.credits_remaining;
+            
+            // 检查是否是管理员
+            checkAdmin();
+        }
+        
+        async function checkAdmin() {
+            try {
+                const data = await apiRequest('/api/admin/users');
+                if (!data.error) {
+                    document.getElementById('adminTab').style.display = 'block';
+                }
+            } catch(e) {}
+        }
+        
+        async function regenerateKey() {
+            if (!confirm('确定要重新生成 API Key 吗？旧 Key 将失效。')) return;
+            const data = await apiRequest('/api/keys/regenerate', {method:'POST'});
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                showMessage('API Key 已重新生成', 'success');
+                loadKeyInfo();
+            }
+        }
+        
+        async function testSearch() {
+            const q = document.getElementById('searchQuery').value;
+            const lang = document.getElementById('searchLang').value;
+            let url = '/api/search?q=' + encodeURIComponent(q);
+            if (lang) url += '&lang=' + lang;
+            
+            const data = await apiRequest(url);
+            document.getElementById('searchResult').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        async function loadUsers() {
+            const data = await apiRequest('/api/admin/users');
+            if (data.error) {
+                showMessage(data.error, 'error');
+                return;
+            }
+            
+            let html = '';
+            for (const user of data.users) {
+                const status = user.banned ? '<span class="banned">已封禁</span>' : '<span class="active">正常</span>';
+                const btn = user.banned 
+                    ? `<button class="btn btn-success" onclick="unbanUser('${user.id}')">解封</button>`
+                    : `<button class="btn btn-danger" onclick="banUser('${user.id}')">封禁</button>`;
+                
+                html += `<tr>
+                    <td>${user.github_login}</td>
+                    <td>${user.created_at}</td>
+                    <td>${user.credits_used}/${user.credits}</td>
+                    <td>${status}</td>
+                    <td>${btn}</td>
+                </tr>`;
+            }
+            document.getElementById('userList').innerHTML = html || '<tr><td colspan="5">暂无用户</td></tr>';
+        }
+        
+        async function banUser(userId) {
+            if (!confirm('确定要封禁此用户吗？')) return;
+            const data = await apiRequest('/api/admin/users/' + userId + '/ban', {method:'POST'});
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                showMessage('用户已封禁', 'success');
+                loadUsers();
+            }
+        }
+        
+        async function unbanUser(userId) {
+            if (!confirm('确定要解封此用户吗？')) return;
+            const data = await apiRequest('/api/admin/users/' + userId + '/unban', {method:'POST'});
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                showMessage('用户已解封', 'success');
+                loadUsers();
+            }
+        }
+        
+        function showTab(tab) {
+            document.getElementById('keysTab').style.display = tab === 'keys' ? 'block' : 'none';
+            document.getElementById('searchTab').style.display = tab === 'search' ? 'block' : 'none';
+            document.getElementById('adminTabContent').style.display = tab === 'admin' ? 'block' : 'none';
+            
+            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'admin') loadUsers();
+        }
+        
+        function showMessage(msg, type) {
+            document.getElementById('message').innerHTML = `<div class="${type}">${msg}</div>`;
+        }
+        
+        loadKeyInfo();
+    </script>
+</body>
+</html>

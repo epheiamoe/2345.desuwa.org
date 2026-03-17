@@ -3,8 +3,8 @@
 ## 环境变量
 
 ```bash
-# GitHub OAuth
-GITHUB_CLIENT_ID=Ov23lihGlJrOecfqaJYd
+# GitHub OAuth（在 https://github.com/settings/developers 创建 OAuth App）
+GITHUB_CLIENT_ID=your_client_id
 GITHUB_CLIENT_SECRET=your_client_secret
 
 # Meilisearch

@@ -27,6 +27,9 @@ MEILISEARCH_HOST = os.environ.get("MEILISEARCH_HOST", "localhost")
 MEILISEARCH_PORT = os.environ.get("MEILISEARCH_PORT", "7700")
 MEILISEARCH_INDEX = os.environ.get("MEILISEARCH_INDEX", "trans_resources")
 
+# 管理员配置（GitHub username）
+ADMIN_USERS = os.environ.get("ADMIN_USERS", "").split(",")
+
 # 数据库文件路径
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.json")
 
@@ -115,6 +118,11 @@ def require_api_key(f):
 
         if not user_id:
             return jsonify({"error": "无效的 API Key"}), 401
+
+        # 检查用户是否被封禁
+        user = db["users"].get(user_id, {})
+        if user.get("banned", False):
+            return jsonify({"error": "账号已被封禁", "code": "banned"}), 403
 
         # 检查速率限制
         allowed, error = check_rate_limit(api_key)
@@ -221,12 +229,8 @@ def auth_callback():
     db["keys"][user["api_key"]] = github_id
     save_db(db)
 
-    # 设置 session
-    session["user_id"] = github_id
-    session["api_key"] = user["api_key"]
-
-    # 跳转回首页
-    return redirect("/?api_key_created=1")
+    # 跳转回控制台
+    return redirect("/api/console.html?token=" + user["api_key"])
 
 
 @app.route("/api/auth/logout")
@@ -409,6 +413,106 @@ def serve_docs(filename):
     return send_from_directory(
         os.path.join(os.path.dirname(__file__), "..", "docs"), filename
     )
+
+
+@app.route("/api/console.html")
+def serve_console():
+    return send_from_directory(os.path.dirname(__file__), "console.html")
+
+
+# ============ 管理员端点 ============
+
+
+def require_admin(f):
+    """管理员认证装饰器"""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        api_key = request.headers.get("Authorization", "").replace("Bearer ", "")
+
+        if not api_key:
+            return jsonify({"error": "需要 API Key"}), 401
+
+        db = load_db()
+        user_id = db["keys"].get(api_key)
+
+        if not user_id:
+            return jsonify({"error": "无效的 API Key"}), 401
+
+        user = db["users"].get(user_id, {})
+        github_login = user.get("github_login", "")
+
+        if github_login not in ADMIN_USERS:
+            return jsonify({"error": "需要管理员权限"}), 403
+
+        request.admin_user = user_id
+        request.admin_login = github_login
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+@app.route("/api/admin/users")
+@require_admin
+def admin_list_users():
+    """获取所有用户列表"""
+    db = load_db()
+    users = []
+    for user_id, user in db["users"].items():
+        users.append(
+            {
+                "id": user_id,
+                "github_login": user.get("github_login", ""),
+                "created_at": user.get("created_at", ""),
+                "credits": user.get("credits", 0),
+                "credits_used": user.get("credits_used", 0),
+                "banned": user.get("banned", False),
+            }
+        )
+    return jsonify({"users": users, "total": len(users)})
+
+
+@app.route("/api/admin/users/<user_id>/ban", methods=["POST"])
+@require_admin
+def admin_ban_user(user_id):
+    """封禁用户"""
+    db = load_db()
+
+    if user_id not in db["users"]:
+        return jsonify({"error": "用户不存在"}), 404
+
+    db["users"][user_id]["banned"] = True
+
+    # 删除用户的 API Key
+    api_key = db["users"][user_id].get("api_key")
+    if api_key and api_key in db["keys"]:
+        del db["keys"][api_key]
+
+    save_db(db)
+
+    return jsonify({"message": "用户已封禁", "user_id": user_id})
+
+
+@app.route("/api/admin/users/<user_id>/unban", methods=["POST"])
+@require_admin
+def admin_unban_user(user_id):
+    """解封用户"""
+    db = load_db()
+
+    if user_id not in db["users"]:
+        return jsonify({"error": "用户不存在"}), 404
+
+    db["users"][user_id]["banned"] = False
+
+    # 生成新的 API Key
+    new_key = secrets.token_urlsafe(32)
+    db["users"][user_id]["api_key"] = new_key
+    db["keys"][new_key] = user_id
+
+    save_db(db)
+
+    return jsonify({"message": "用户已解封", "user_id": user_id, "api_key": new_key})
 
 
 # ============ 健康检查 ============
