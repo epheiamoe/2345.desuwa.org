@@ -217,7 +217,7 @@ if ($query) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2345.desuwa.org - 跨性别资源搜索</title>
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
     <div class="header">
@@ -459,30 +459,23 @@ if ($query) {
                 <p>此功能正在开发中，预计后续版本将提供LLM智能摘要功能。</p>
             </div>
             <?php endif; ?>
-        </div>
 
-        <!-- 搜索技巧开关（页面底部，不影响布局） -->
-        <div style="text-align:center;margin-top:30px;">
-            <button onclick="toggleSearchTips()" style="background:none;border:none;color:#999;cursor:pointer;font-size:12px;padding:5px 10px;">
-                ▼ 搜索技巧
-            </button>
-        </div>
-
-        <!-- 搜索技巧提示 -->
-        <div class="search-tips" id="searchTips" style="display:none;">
-            <div class="tips-content">
-                <h4>搜索语法</h4>
-                <ul>
-                    <li><code>"精确短语"</code> - 精确匹配</li>
-                    <li><code>word1 OR word2</code> - 或匹配</li>
-                    <li><code>word1 AND word2</code> - 同时包含</li>
-                    <li><code>word1 NOT word2</code> - 包含前者排除后者</li>
-                    <li><code>word*</code> - 前缀匹配</li>
-                </ul>
-                <h4>快捷筛选</h4>
-                <ul>
-                    <li><code>site:example.com</code> - 筛选指定站点</li>
-                </ul>
+            <!-- 搜索技巧下拉按钮 -->
+            <div style="text-align:center;margin-top:20px;position:relative;display:inline-block;width:100%;">
+                <button onclick="toggleSearchTips()" id="tipsBtn" style="background:#f1f3f4;border:1px solid #dfe1e5;border-radius:16px;color:#666;font-size:12px;padding:6px 16px;cursor:pointer;">
+                    ▼ 搜索技巧
+                </button>
+                <div class="search-tips-dropdown" id="searchTipsDropdown" style="display:none;position:absolute;left:50%;transform:translateX(-50%);top:100%;z-index:100;background:#fff;border:1px solid #dfe1e5;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);padding:15px 20px;text-align:left;min-width:280px;margin-top:8px;">
+                    <div style="font-size:13px;color:#333;line-height:1.8;">
+                        <div style="margin-bottom:10px;"><strong>搜索语法</strong></div>
+                        <div style="margin-bottom:6px;"><code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;color:#1a73e8;">"精确短语"</code> 精确匹配</div>
+                        <div style="margin-bottom:6px;"><code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;color:#1a73e8;">word1 OR word2</code> 或匹配</div>
+                        <div style="margin-bottom:6px;"><code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;color:#1a73e8;">word1 NOT word2</code> 排除</div>
+                        <div style="margin-bottom:10px;"><code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;color:#1a73e8;">word*</code> 前缀匹配</div>
+                        <div><strong>快捷筛选</strong></div>
+                        <div><code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;color:#1a73e8;">site:example.com</code> 站点筛选</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

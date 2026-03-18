@@ -32,17 +32,27 @@ function toggleTheme() {
 }
 
 function toggleSearchTips() {
-    var tips = document.getElementById('searchTips');
-    var btn = tips.previousElementSibling;
-    if (tips.style.display === 'none') {
-        tips.style.display = 'block';
-        tips.style.animation = 'fadeIn 0.3s ease';
+    var dropdown = document.getElementById('searchTipsDropdown');
+    var btn = document.getElementById('tipsBtn');
+    if (dropdown.style.display === 'none') {
+        dropdown.style.display = 'block';
+        dropdown.style.animation = 'dropdownFadeIn 0.2s ease';
         btn.textContent = '▲ 搜索技巧';
     } else {
-        tips.style.display = 'none';
+        dropdown.style.display = 'none';
         btn.textContent = '▼ 搜索技巧';
     }
 }
+
+// 点击其他地方关闭下拉框
+document.addEventListener('click', function(e) {
+    var dropdown = document.getElementById('searchTipsDropdown');
+    var btn = document.getElementById('tipsBtn');
+    if (dropdown && btn && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+        btn.textContent = '▼ 搜索技巧';
+    }
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     initTheme();

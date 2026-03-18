@@ -62,6 +62,35 @@
                 <p>已使用额度：<strong id="creditsUsed">-</strong></p>
                 <p>剩余额度：<strong id="creditsRemaining">-</strong></p>
             </div>
+            
+            <div class="card">
+                <h2>快速使用</h2>
+                <p>API 文档：<a href="/docs/api.html" target="_blank">查看完整 API 文档</a></p>
+                <div style="margin-top:15px;">
+                    <div style="margin-bottom:15px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+                            <strong>cURL</strong>
+                            <button onclick="copyCode('curlCmd')" style="padding:4px 12px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">复制</button>
+                        </div>
+                        <pre id="curlCmd" style="background:#f5f5f5;padding:10px;border-radius:4px;overflow:auto;margin:0;font-size:13px;">curl "https://2345.desuwa.org/api/search?q=HRT" \
+  -H "Authorization: Bearer <span id="curlKey">YOUR_API_KEY</span>"</pre>
+                    </div>
+                    <div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+                            <strong>Python</strong>
+                            <button onclick="copyCode('pythonCmd')" style="padding:4px 12px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">复制</button>
+                        </div>
+                        <pre id="pythonCmd" style="background:#f5f5f5;padding:10px;border-radius:4px;overflow:auto;margin:0;font-size:13px;">import requests
+
+resp = requests.get("https://2345.desuwa.org/api/search", params={
+    "q": "HRT"
+}, headers={
+    "Authorization": "Bearer <span id="pythonKey">YOUR_API_KEY</span>"
+})
+print(resp.json())</pre>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- 搜索测试 -->
@@ -140,6 +169,7 @@
             document.getElementById('apiKey').textContent = data.api_key;
             document.getElementById('creditsUsed').textContent = data.credits_used;
             document.getElementById('creditsRemaining').textContent = data.credits_remaining;
+            updateApiKeyExamples();
             
             // 检查是否是管理员
             checkAdmin();
@@ -235,6 +265,23 @@
         
         function showMessage(msg, type) {
             document.getElementById('message').innerHTML = `<div class="${type}">${msg}</div>`;
+        }
+        
+        function copyCode(elementId) {
+            const el = document.getElementById(elementId);
+            const text = el.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('已复制到剪贴板', 'success');
+            }).catch(() => {
+                showMessage('复制失败', 'error');
+            });
+        }
+        
+        function updateApiKeyExamples() {
+            if (apiKey) {
+                document.getElementById('curlKey').textContent = apiKey;
+                document.getElementById('pythonKey').textContent = apiKey;
+            }
         }
         
         loadKeyInfo();

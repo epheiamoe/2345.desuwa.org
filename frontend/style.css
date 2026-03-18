@@ -259,43 +259,22 @@ body {
     font-size: 14px;
 }
 
-/* 搜索技巧提示 */
-.search-tips {
-    text-align: left;
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 15px 20px;
-    margin-top: 15px;
+/* 搜索技巧下拉框 */
+.search-tips-dropdown {
+    animation: dropdownFadeIn 0.2s ease;
 }
 
-.search-tips h4 {
-    color: #333;
-    font-size: 14px;
-    margin: 10px 0 5px 0;
-}
-
-.search-tips ul {
-    margin: 5px 0;
-    padding-left: 20px;
-}
-
-.search-tips li {
-    color: #666;
-    font-size: 13px;
-    margin: 3px 0;
-}
-
-.search-tips code {
-    background: #e8f0fe;
+.search-tips-dropdown code {
+    background: #f1f3f4;
     color: #1a73e8;
-    padding: 1px 5px;
+    padding: 2px 6px;
     border-radius: 3px;
     font-size: 12px;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes dropdownFadeIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 /* 移动端适配 */
@@ -424,21 +403,20 @@ body.dark .ai-overview p {
     color: #bdc1c6;
 }
 
-body.dark .search-tips {
+body.dark .search-tips-dropdown {
     background: #303134;
+    border-color: #5f6368;
 }
 
-body.dark .search-tips h4 {
-    color: #e8eaed;
-}
-
-body.dark .search-tips li {
-    color: #9aa0a6;
-}
-
-body.dark .search-tips code {
+body.dark .search-tips-dropdown code {
     background: #3c4043;
     color: #8ab4f8;
+}
+
+body.dark #tipsBtn {
+    background: #303134;
+    border-color: #5f6368;
+    color: #9aa0a6;
 }
 
 body.dark .error-msg {
