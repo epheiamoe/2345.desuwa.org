@@ -340,6 +340,12 @@ body.dark .lang-link:hover, body.dark .tag-link:hover {
     color: #8ab4f8;
 }
 
+body.dark .lang-link.active, body.dark .tag-link.active {
+    background: #8ab4f8;
+    color: #202124;
+    font-weight: bold;
+}
+
 body.dark .domain-filter {
     background: #303134;
 }
