@@ -353,6 +353,16 @@ def search():
 
     # 添加筛选（防止注入）
     filters = []
+
+    # 语言筛选 - 使用 Meilisearch 的 language 字段
+    if lang != "all":
+        if lang == "zh":
+            # 兼容旧版本：zh 代表所有中文
+            filters.append("(language = 'zh-cn' OR language = 'zh-hant')")
+        else:
+            escaped_lang = lang.replace("'", "\\'")
+            filters.append(f"language = '{escaped_lang}'")
+
     if tags:
         for tag in tags.split(","):
             tag = tag.strip()
@@ -364,7 +374,7 @@ def search():
         filters.append(f"domain = '{escaped_domain}'")
 
     if filters:
-        search_params["filter"] = " OR ".join(filters)
+        search_params["filter"] = " AND ".join(filters)
 
     # 搜索
     try:
@@ -376,61 +386,18 @@ def search():
 
     hits = results.get("hits", [])
 
-    # 过滤语言和简繁体
-    if lang != "all" or script != "all":
+    # 简繁体筛选（仍需后处理，因为 language 字段不区分简繁体）
+    if script != "all":
         filtered_hits = []
         for h in hits:
             url = h.get("url", "")
-
-            # 检测语言和脚本
-            doc_lang = "zh"
-            doc_script = "simplified"  # simplified, traditional
-
+            doc_script = "simplified"
             if "/zh-hant" in url or "/zh-tw" in url or "/zh-hk" in url:
-                doc_lang = "zh-hant"
                 doc_script = "traditional"
-            elif "/zh-cn" in url:
-                doc_lang = "zh-cn"
-                doc_script = "simplified"
-            elif "/zh-" in url:
-                # 其他 /zh-xx 如 /zh-hans
-                doc_lang = "zh-cn"
-                doc_script = "simplified"
-            elif url.endswith("/zh") or "/zh/" in url:
-                # 可能是 /zh 或 /zh/xxx
-                doc_lang = "zh-cn"
-                doc_script = "simplified"
-            elif "/en/" in url:
-                doc_lang = "en"
-            elif "/ja/" in url:
-                doc_lang = "ja"
-            elif "/es/" in url:
-                doc_lang = "es"
-            elif "/nl/" in url:
-                doc_lang = "nl"
-            else:
-                # 无语言路径，默认中文简体
-                doc_lang = "zh-cn"
-                doc_script = "simplified"
 
-            # 检查语言筛选
-            # zh = 简体+繁体 (兼容), zh-cn = 简体, zh-hant = 繁体
-            if lang == "all":
-                lang_match = True
-            elif lang == "zh":
-                # 兼容旧版本：zh 代表所有中文
-                lang_match = doc_lang in ("zh-cn", "zh-hant")
-            else:
-                lang_match = doc_lang == lang
-
-            # 检查简繁体筛选
-            script_match = script == "all" or doc_script == script
-
-            if lang_match and script_match:
-                h["_language"] = doc_lang
+            if doc_script == script:
                 h["_script"] = doc_script
                 filtered_hits.append(h)
-
         hits = filtered_hits
 
     # 分页

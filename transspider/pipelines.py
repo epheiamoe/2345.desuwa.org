@@ -10,11 +10,39 @@ import json
 import sys
 import os
 from datetime import datetime
+from urllib.parse import urlparse
 
 import scrapy
 from scrapy.pipelines.files import FilesPipeline
 from itemadapter import ItemAdapter
 import meilisearch
+
+
+def detect_language_from_url(url):
+    """从 URL 路径检测语言"""
+    try:
+        parsed = urlparse(url)
+        path = parsed.path.lower()
+
+        if "/zh-hant" in path or "/zh-tw" in path or "/zh-hk" in path:
+            return "zh-hant"
+        elif "/zh-cn" in path or "/zh-hans" in path:
+            return "zh-cn"
+        elif "/zh/" in path or path.endswith("/zh") or "/zh " in path:
+            return "zh-cn"
+        elif "/en/" in path:
+            return "en"
+        elif "/ja/" in path:
+            return "ja"
+        elif "/es/" in path:
+            return "es"
+        elif "/nl/" in path:
+            return "nl"
+        else:
+            return "zh-cn"
+    except Exception:
+        return "zh-cn"
+
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -93,7 +121,7 @@ class MeilisearchPipeline:
 
             # 配置筛选属性
             try:
-                self.index.update_filterable_attributes(["domain", "tags"])
+                self.index.update_filterable_attributes(["domain", "tags", "language"])
             except Exception as e:
                 spider.logger.warning(f"设置 filterable_attributes 失败: {e}")
 
@@ -123,6 +151,9 @@ class MeilisearchPipeline:
         url = item.get("url", "")
         doc_id = abs(hash(url)) % 100000000
 
+        # 从 URL 检测语言
+        language = detect_language_from_url(url)
+
         doc = {
             "id": doc_id,
             "url": url,
@@ -130,6 +161,7 @@ class MeilisearchPipeline:
             "content": item.get("content", "").strip()[:5000],
             "domain": item.get("domain", ""),
             "tags": item.get("tags", []),
+            "language": language,
             "crawled_at": datetime.now().isoformat(),
         }
 
