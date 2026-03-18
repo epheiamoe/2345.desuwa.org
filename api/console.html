@@ -51,7 +51,10 @@
             <div class="card">
                 <h2>我的 API Key</h2>
                 <p>使用此 Key 访问 API：</p>
-                <div class="api-key" id="apiKey">加载中...</div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="api-key" id="apiKey" style="flex:1;">加载中...</div>
+                    <button class="btn btn-primary" onclick="copyApiKey()" style="padding:8px 16px;">复制</button>
+                </div>
                 <p style="margin-top:10px;">
                     <button class="btn btn-danger" onclick="regenerateKey()">重新生成 Key</button>
                 </p>
@@ -203,6 +206,9 @@ print(resp.json())</pre>
             
             const data = await apiRequest(url);
             document.getElementById('searchResult').textContent = JSON.stringify(data, null, 2);
+            // 更新额度显示
+            document.getElementById('creditsUsed').textContent = data.credits_used;
+            document.getElementById('creditsRemaining').textContent = data.credits_remaining;
         }
         
         async function loadUsers() {
@@ -265,6 +271,15 @@ print(resp.json())</pre>
         
         function showMessage(msg, type) {
             document.getElementById('message').innerHTML = `<div class="${type}">${msg}</div>`;
+        }
+        
+        function copyApiKey() {
+            const key = document.getElementById('apiKey').textContent;
+            navigator.clipboard.writeText(key).then(() => {
+                showMessage('API Key 已复制到剪贴板', 'success');
+            }).catch(() => {
+                showMessage('复制失败', 'error');
+            });
         }
         
         function copyCode(elementId) {

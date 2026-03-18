@@ -28,6 +28,9 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
+# 配置 - 输出 UTF-8 而非 unicode 转义
+app.json.ensure_ascii = False
+
 # 配置
 app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret-change-in-production")
 
