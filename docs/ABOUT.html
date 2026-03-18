@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于 | 2345.desuwa.org</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.8;
+            color: #333;
+        }
+        h1 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; }
+        h2 { color: #1a73e8; margin-top: 30px; }
+        a { color: #1a73e8; }
+        a:hover { text-decoration: underline; }
+        .back { margin-bottom: 20px; }
+        .back a { color: #666; font-size: 14px; }
+        ul { padding-left: 25px; }
+        li { margin: 8px 0; }
+        .principles { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .principles li { margin: 12px 0; }
+        blockquote {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1a73e8;
+    border-left: 4px solid #1a73e8;
+    padding-left: 15px;
+    margin: 15px 0;
+} 
+            background: #e8f0fe; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 30px 0;
+            font-style: italic;
+        }
+        .signature { text-align: right; color: #666; margin-top: 20px; }
+        code { background: #f1f3f4; padding: 2px 6px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="back"><a href="/">← 返回首页</a></div>
+
+    <h1>关于</h1>
+
+    <p>2345.desuwa.org 是一个<strong>专为跨性别群体打造的开源垂直搜索引擎</strong>。</p>
+
+    <p>我们只收录来自 <a href="https://2345.lgbt" target="_blank">2345.lgbt</a> 导航站的可靠资源。</p>
+
+    <p>如果您喜欢，<a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank">请在Github为我们的项目点个Star</a></p>
+
+    <h2>我们的核心原则</h2>
+
+    <div class="principles">
+        <ul>
+            <li><strong>只收录可靠来源</strong>：全部数据来源于 project-trans 生态下的 2345.lgbt，不主动爬取外部未知网站，避免低质、有害或过时信息。</li>
+            <li><strong>极致隐私保护</strong>：我们<strong>不记录任何搜索历史、不保存用户 IP、不使用追踪 Cookie</strong>。即使通过 TOR + NoScript 访问，大部分功能也能正常使用。</li>
+            <li><strong>开源透明</strong>：项目完全开源（LGPLv3 协议），欢迎社区参与贡献、部署自己的实例，或基于 API 开发工具。</li>
+            <li><strong>社区导向</strong>：（主要）为中文（简体/繁体）跨性别朋友提供快速、精准、可信的知识获取途径，减少在茫茫网络中翻找靠谱资料的痛苦。</li>
+        </ul>
+    </div>
+
+    <h2>技术实现</h2>
+
+    <ul>
+        <li>前端：简洁的 PHP 页面 + 标签筛选 + 多语言支持</li>
+        <li>后端搜索：Meilisearch（极速且支持中文分词）</li>
+        <li>数据采集：Scrapy 爬虫（仅限已知可靠域名）</li>
+        <li>API：提供开放API接口，您可以自己调用或通过 Anthropic Skill 调用。</li>
+    </ul>
+
+    <h2>免责声明</h2>
+
+    <ul>
+        <li>本站提供的信息仅供参考，不构成任何医疗、法律或心理咨询意见。</li>
+        <li>任何医疗相关决定，请务必咨询合格的专业医师。</li>
+        <li>任何法律相关问题，请咨询咨询合格的专业律师。</li>
+        <li>我们尽力确保内容准确，但无法对外部网站内容的变更负责。</li>
+        <li><a href="/docs/disclaimer.html">完整免责声明</a></li>
+    </ul>
+
+    <h2>联系与贡献</h2>
+
+    <ul>
+        <li>GitHub 仓库：<a href="https://github.com/epheiamoe/2345.desuwa.org" target="_blank">https://github.com/epheiamoe/2345.desuwa.org</a></li>
+        <li>欢迎提交 Issue、Pull Request，或发送邮件至 <a href="mailto:2345@desuwa.org">2345@desuwa.org</a></li>
+        <li>如果您想自托管部署，GitHub 仓库的 README 中有完整 Docker + Nginx 教程。我们推荐并希望大家自己部署它。</li>
+        <li>如果您想继续开发，欢迎 Fork、提交 PR 等。</li>
+        <li>您也可以使用 AI 辅助开发，请参考仓库中的 <code>AGENTS.md</code></li>
+    </ul>
+
+    <h2>感谢</h2>
+
+    <div class="thanks">
+        <blockquote>我们的存在，就是对恶意最大的反抗。</blockquote>
+        <p>感谢所有为 2345.lgbt 和 project-trans 贡献资源的社区成员。</p>
+        <p>愿每一位正在探索自我的人，都能在这里找到一点光。</p>
+    </div>
+
+    <div class="signature">
+        —— <a href="https://github.com/epheiamoe" target="_blank">Epheia</a>
+    </div>
+</body>
+</html>

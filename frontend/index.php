@@ -459,30 +459,33 @@ if ($query) {
                 <p>此功能正在开发中，预计后续版本将提供LLM智能摘要功能。</p>
             </div>
             <?php endif; ?>
+        </div>
 
-            <!-- 搜索技巧开关 -->
-            <button onclick="toggleSearchTips()" style="background:none;border:none;color:#1a73e8;cursor:pointer;font-size:13px;padding:8px 0;margin-top:10px;">
+        <!-- 搜索技巧开关（页面底部，不影响布局） -->
+        <div style="text-align:center;margin-top:30px;">
+            <button onclick="toggleSearchTips()" style="background:none;border:none;color:#999;cursor:pointer;font-size:12px;padding:5px 10px;">
                 ▼ 搜索技巧
             </button>
+        </div>
 
-            <!-- 搜索技巧提示 -->
-            <div class="search-tips" id="searchTips" style="display:none;">
-                <div class="tips-content">
-                    <h4>搜索语法</h4>
-                    <ul>
-                        <li><code>"精确短语"</code> - 精确匹配</li>
-                        <li><code>word1 OR word2</code> - 或匹配</li>
-                        <li><code>word1 AND word2</code> - 同时包含</li>
-                        <li><code>word1 NOT word2</code> - 包含前者排除后者</li>
-                        <li><code>word*</code> - 前缀匹配</li>
-                    </ul>
-                    <h4>快捷筛选</h4>
-                    <ul>
-                        <li><code>site:example.com</code> - 筛选指定站点</li>
-                    </ul>
-                </div>
+        <!-- 搜索技巧提示 -->
+        <div class="search-tips" id="searchTips" style="display:none;">
+            <div class="tips-content">
+                <h4>搜索语法</h4>
+                <ul>
+                    <li><code>"精确短语"</code> - 精确匹配</li>
+                    <li><code>word1 OR word2</code> - 或匹配</li>
+                    <li><code>word1 AND word2</code> - 同时包含</li>
+                    <li><code>word1 NOT word2</code> - 包含前者排除后者</li>
+                    <li><code>word*</code> - 前缀匹配</li>
+                </ul>
+                <h4>快捷筛选</h4>
+                <ul>
+                    <li><code>site:example.com</code> - 筛选指定站点</li>
+                </ul>
             </div>
         </div>
+    </div>
     
     <div class="footer">
         <div class="footer-content">
@@ -490,6 +493,7 @@ if ($query) {
                 <strong>免责声明：</strong>本搜索引擎仅收录 2345.lgbt 公开资源，仅供参考。医疗问题请咨询专业医生，本网站不承担任何责任。
             </div>
             <p>
+                <a href="/docs/about.html">关于</a> | 
                 <a href="/docs/terms.html">服务条款</a> | 
                 <a href="/docs/privacy.html">隐私政策</a> | 
                 <a href="/docs/disclaimer.html">免责声明</a> | 
