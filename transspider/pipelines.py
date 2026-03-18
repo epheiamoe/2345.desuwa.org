@@ -54,12 +54,13 @@ class MeilisearchPipeline:
 
     def __init__(self):
         """初始化 Meilisearch 客户端"""
+        api_key = MEILISEARCH_API_KEY if MEILISEARCH_API_KEY else None
         self.client = meilisearch.Client(
-            f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}"
+            f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}", api_key
         )
         self.index = None
         self.items_buffer = []
-        self.batch_size = 10  # 减少批量大小便于测试
+        self.batch_size = 100  # 生产环境使用更大的批量
 
     def open_spider(self, spider):
         """

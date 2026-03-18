@@ -18,6 +18,7 @@ from transspider.config import (
     get_random_user_agent,
     PROJECT_ROOT,
 )
+from transspider.items import TransResourceItem
 
 
 def load_domain_tags():
@@ -97,13 +98,12 @@ class TransSpider(scrapy.Spider):
             self.logger.warning(f"正文提取失败 {url}: {e}")
 
         # 创建 Item
-        item = {
-            "url": url,
-            "title": response.css("title::text").get() or "",
-            "domain": domain,
-            "content": content or "",
-            "tags": self.domain_tags.get(domain, []),  # 从 domains.json 获取标签
-        }
+        item = TransResourceItem()
+        item["url"] = url
+        item["title"] = response.css("title::text").get() or ""
+        item["domain"] = domain
+        item["content"] = content or ""
+        item["tags"] = self.domain_tags.get(domain, [])  # 从 domains.json 获取标签
 
         # 返回 item 用于 Pipeline 处理
         yield item

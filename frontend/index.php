@@ -69,8 +69,20 @@ $error = '';
 
 // 搜索请求
 if ($query) {
-    // 简单的速率限制（基于 IP）
-    $rateLimitFile = sys_get_temp_dir() . '/search_rate_' . md5($_SERVER['REMOTE_ADDR']);
+    // 简单的速率限制（基于 IP，支持代理）
+function getRealIp() {
+    $ip = '';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        $ip = trim($ips[0]);
+    } elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        $ip = $_SERVER['HTTP_X_REAL_IP'];
+    } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+        $ip = $_SERVER['REMOTE_ADDR'];
+    }
+    return $ip;
+}
+$rateLimitFile = sys_get_temp_dir() . '/search_rate_' . md5(getRealIp());
     $now = time();
     
     // 检查是否超过限制（每分钟 20 次）
@@ -112,7 +124,8 @@ if ($query) {
         if (!empty($selectedTags)) {
             $filters = [];
             foreach ($selectedTags as $tag) {
-                $filters[] = "tags = '{$tag}'";
+                $escapedTag = htmlspecialchars(str_replace("'", "\\'", $tag), ENT_QUOTES, 'UTF-8');
+                $filters[] = "tags = '{$escapedTag}'";
             }
             $searchParams['filter'] = implode(' OR ', $filters);
         }
@@ -120,7 +133,8 @@ if ($query) {
         // 添加站点筛选
         if (!empty($selectedSite)) {
             $existingFilter = $searchParams['filter'] ?? '';
-            $siteFilter = "domain = '{$selectedSite}'";
+            $escapedSite = htmlspecialchars(str_replace("'", "\\'", $selectedSite), ENT_QUOTES, 'UTF-8');
+            $siteFilter = "domain = '{$escapedSite}'";
             $searchParams['filter'] = $existingFilter ? "({$existingFilter}) AND {$siteFilter}" : $siteFilter;
         }
         
@@ -378,6 +392,9 @@ if ($query) {
                     }
                     if ($selectedLang) {
                         $baseParams .= '&lang=' . urlencode($selectedLang);
+                    }
+                    if ($selectedSite) {
+                        $baseParams .= '&site=' . urlencode($selectedSite);
                     }
                 ?>
                 <div class="pagination">

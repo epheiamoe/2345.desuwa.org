@@ -15,9 +15,11 @@ class TransResourceItem(scrapy.Item):
     - title: 页面标题
     - content: 正文内容（提取后）
     - domain: 域名
+    - tags: 标签列表
     """
 
     url = scrapy.Field()
     title = scrapy.Field()
     content = scrapy.Field()
     domain = scrapy.Field()
+    tags = scrapy.Field()

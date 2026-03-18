@@ -36,9 +36,13 @@ GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 MEILISEARCH_HOST = os.environ.get("MEILISEARCH_HOST", "localhost")
 MEILISEARCH_PORT = os.environ.get("MEILISEARCH_PORT", "7700")
 MEILISEARCH_INDEX = os.environ.get("MEILISEARCH_INDEX", "trans_resources")
+MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_API_KEY", "")
+SITE_URL = os.environ.get("SITE_URL", "https://2345.desuwa.org")
 
 # 管理员配置（GitHub username）
-ADMIN_USERS = os.environ.get("ADMIN_USERS", "").split(",")
+ADMIN_USERS = [
+    u.strip() for u in os.environ.get("ADMIN_USERS", "").split(",") if u.strip()
+]
 
 # 数据库文件路径
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.json")
@@ -67,7 +71,8 @@ def save_db(db):
 
 def get_meilisearch_client():
     """获取 Meilisearch 客户端"""
-    return meilisearch.Client(f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}")
+    api_key = MEILISEARCH_API_KEY if MEILISEARCH_API_KEY else None
+    return meilisearch.Client(f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}", api_key)
 
 
 def check_rate_limit(api_key):
@@ -167,7 +172,7 @@ def auth_login():
     return redirect(
         f"https://github.com/login/oauth/authorize"
         f"?client_id={GITHUB_CLIENT_ID}"
-        f"&redirect_uri=https://2345.desuwa.org/api/auth/callback"
+        f"&redirect_uri={SITE_URL}/api/auth/callback"
         f"&scope=read:user"
         f"&state={state}"
     )
@@ -346,15 +351,17 @@ def search():
         "cropLength": 200,
     }
 
-    # 添加筛选
+    # 添加筛选（防止注入）
     filters = []
     if tags:
         for tag in tags.split(","):
             tag = tag.strip()
             if tag:
-                filters.append(f"tags = '{tag}'")
+                escaped_tag = tag.replace("'", "\\'")
+                filters.append(f"tags = '{escaped_tag}'")
     if domain:
-        filters.append(f"domain = '{domain}'")
+        escaped_domain = domain.replace("'", "\\'")
+        filters.append(f"domain = '{escaped_domain}'")
 
     if filters:
         search_params["filter"] = " OR ".join(filters)
@@ -430,32 +437,20 @@ def search():
     total = len(hits)
     hits = hits[offset : offset + limit]
 
-    # 获取用户剩余配额
+    # 获取用户剩余配额并更新
     db = load_db()
     user = db["users"].get(request.user_id, {})
     credits = user.get("credits", 0)
     credits_used = user.get("credits_used", 0)
 
+    # 持久化 credits_used 到数据库
+    db["users"][request.user_id]["credits_used"] = credits_used + 1
+    save_db(db)
+
     return jsonify(
         {
             "results": hits,
             "total": total,
-            "query": query,
-            "credits_used": credits_used + 1,
-            "credits_remaining": credits - credits_used - 1,
-            "limit": limit,
-            "offset": offset,
-        }
-    )
-
-    # ============ 用户信息端点 ============
-    credits = user.get("credits", 0)
-    credits_used = user.get("credits_used", 0)
-
-    return jsonify(
-        {
-            "results": hits,
-            "total": results.get("estimatedTotalHits", 0),
             "query": query,
             "credits_used": credits_used + 1,
             "credits_remaining": credits - credits_used - 1,

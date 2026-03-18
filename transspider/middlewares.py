@@ -16,6 +16,9 @@ from itemadapter import ItemAdapter
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# 导入配置
+from transspider.config import USE_WARP_PROXY, WARP_SOCKS5_PROXY
+
 
 # 随机 User-Agent 列表
 USER_AGENTS = [
@@ -59,14 +62,11 @@ class ProxyMiddleware:
     """
     WARP 代理中间件（可选）
 
-    仅在配置启用时使用 WARP 代理
-    默认关闭，避免依赖
+    从 config.py 读取配置，控制是否启用 WARP 代理
     """
 
-    # 从配置文件读取是否启用代理
-    # TODO: 未来可以通过环境变量或配置文件控制
-    ENABLED = False
-    PROXY = "socks5://127.0.0.1:1080"  # WARP 本地 socks5 端口
+    ENABLED = USE_WARP_PROXY
+    PROXY = WARP_SOCKS5_PROXY
 
     @classmethod
     def from_crawler(cls, crawler):
