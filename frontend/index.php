@@ -16,6 +16,20 @@ $MEILISEARCH_HOST = getenv('MEILISEARCH_HOST') ?: 'localhost';
 $MEILISEARCH_PORT = getenv('MEILISEARCH_PORT') ?: '7700';
 $MEILISEARCH_INDEX = 'trans_resources';
 
+// 获取真实 IP（支持代理）
+function getRealIp() {
+    $ip = '';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        $ip = trim($ips[0]);
+    } elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        $ip = $_SERVER['HTTP_X_REAL_IP'];
+    } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+        $ip = $_SERVER['REMOTE_ADDR'];
+    }
+    return $ip ?: '127.0.0.1';
+}
+
 // 可用标签列表（从 domains.json 加载）
 $availableTags = ['MtF', 'FtM', '社区', '性', '知识库', 'HRT', '指南', '报告', '学术', '影视', '音乐', '游戏', '小说', '法律', '医疗'];
 
@@ -70,19 +84,7 @@ $error = '';
 // 搜索请求
 if ($query) {
     // 简单的速率限制（基于 IP，支持代理）
-function getRealIp() {
-    $ip = '';
-    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-        $ip = trim($ips[0]);
-    } elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
-        $ip = $_SERVER['HTTP_X_REAL_IP'];
-    } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
-        $ip = $_SERVER['REMOTE_ADDR'];
-    }
-    return $ip;
-}
-$rateLimitFile = sys_get_temp_dir() . '/search_rate_' . md5(getRealIp());
+    $rateLimitFile = sys_get_temp_dir() . '/search_rate_' . md5(getRealIp());
     $now = time();
     
     // 检查是否超过限制（每分钟 20 次）
@@ -206,7 +208,7 @@ $rateLimitFile = sys_get_temp_dir() . '/search_rate_' . md5(getRealIp());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2345.desuwa.org - 跨性别资源搜索</title>
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
     <div class="header">
@@ -240,12 +242,14 @@ $rateLimitFile = sys_get_temp_dir() . '/search_rate_' . md5(getRealIp());
             <div style="margin-top:12px;">
                 <span style="color:#666;font-size:13px;margin-right:8px;">语言：</span>
                 <?php foreach ($availableLanguages as $langCode => $langName): ?>
-                    <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?>&lang=<?php echo urlencode($langCode); ?>" 
+                    <?php $siteParam = $selectedSite ? '&site=' . urlencode($selectedSite) : ''; ?>
+                    <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?><?php echo $siteParam; ?>&lang=<?php echo urlencode($langCode); ?>" 
                        class="lang-link <?php echo $selectedLang === $langCode ? 'active' : ''; ?>">
                         <?php echo htmlspecialchars($langName); ?>
                     </a>
                 <?php endforeach; ?>
-                <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?>" 
+                <?php $siteParam = $selectedSite ? '&site=' . urlencode($selectedSite) : ''; ?>
+                <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?><?php echo $siteParam; ?>" 
                    class="lang-link <?php echo $selectedLang === '' ? 'active' : ''; ?>">
                     全部
                 </a>
@@ -444,6 +448,6 @@ $rateLimitFile = sys_get_temp_dir() . '/search_rate_' . md5(getRealIp());
             </p>
         </div>
     </div>
-    <script src="search.js?v=5"></script>
+    <script src="search.js?v=6"></script>
 </body>
 </html>
