@@ -206,7 +206,7 @@ $rateLimitFile = sys_get_temp_dir() . '/search_rate_' . md5(getRealIp());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2345.desuwa.org - 跨性别资源搜索</title>
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
     <div class="header">
@@ -444,6 +444,6 @@ $rateLimitFile = sys_get_temp_dir() . '/search_rate_' . md5(getRealIp());
             </p>
         </div>
     </div>
-    <script src="search.js?v=4"></script>
+    <script src="search.js?v=5"></script>
 </body>
 </html>

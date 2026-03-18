@@ -1,9 +1,13 @@
-// 检测用户浏览器语言并自动选择
+// 检测用户浏览器语言并自动选择（仅在用户未明确选择语言时）
 function detectUserLanguage() {
     var urlParams = new URLSearchParams(window.location.search);
     
-    // 如果已有语言参数，不处理
+    // 如果已有语言参数，说明用户已明确选择，不进行自动检测
     if (urlParams.get('lang')) return;
+    
+    // 检查 localStorage 是否已有用户手动选择的语言
+    var savedLang = localStorage.getItem('user_language');
+    if (savedLang) return;  // 用户之前已选择，不覆盖
     
     var userLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
     var lang = 'zh';
@@ -23,15 +27,8 @@ function detectUserLanguage() {
         lang = 'nl';
     }
     
-    // 构建新 URL
-    var baseUrl = window.location.pathname;
-    var query = urlParams.get('q') || '';
-    var newUrl = baseUrl + '?lang=' + lang;
-    if (query) {
-        newUrl += '&q=' + encodeURIComponent(query);
-    }
-    
-    window.location.href = newUrl;
+    // 构建新 URL（不添加其他参数，避免搜索词等丢失）
+    window.location.search = 'lang=' + lang;
 }
 
 // 暗黑模式

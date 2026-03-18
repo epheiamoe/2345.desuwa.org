@@ -65,23 +65,55 @@ php -S localhost:8080
 
 ### 生产环境部署（Docker + Nginx）
 
-#### 1. 安装依赖
-
-```bash
-# 安装 Docker 和 Docker Compose
-```
-
-#### 2. 部署代码
+#### 1. 克隆代码
 
 ```bash
 git clone https://github.com/epheiamoe/2345.desuwa.org.git /var/www/2345.desuwa.org
 cd /var/www/2345.desuwa.org
 ```
 
-#### 3. 启动 Meilisearch
+#### 2. 启动 Meilisearch
 
 ```bash
 docker-compose up -d
+```
+
+#### 3. 配置 API 服务
+
+```bash
+cd api
+cp env.example .env
+```
+
+编辑 `.env` 文件，配置以下内容：
+
+```bash
+# 必填：GitHub OAuth（用于登录）
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+
+# 必填：Flask session 密钥（随机字符串）
+FLASK_SECRET=your_random_secret_key
+
+# 必填：站点 URL（用于 OAuth 回调）
+SITE_URL=https://your-domain.com
+
+# 可选：管理员 GitHub 用户名（逗号分隔）
+ADMIN_USERS=your_github_username
+
+# 可选：Meilisearch 配置
+MEILISEARCH_HOST=localhost
+MEILISEARCH_PORT=7700
+MEILISEARCH_INDEX=trans_resources
+MEILISEARCH_API_KEY=  # 生产环境建议设置密钥
+API_PORT=5000
+```
+
+启动 API 服务：
+
+```bash
+pip install -r requirements.txt
+python app.py &
 ```
 
 #### 4. 配置 Nginx
@@ -93,11 +125,19 @@ server {
     root /var/www/2345.desuwa.org/frontend;
     index index.php;
 
+    # PHP-FPM
     location ~ \.php$ {
         fastcgi_pass unix:/var/run/php/php-fpm.sock;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         include fastcgi_params;
+    }
+
+    # API 反向代理
+    location /api/ {
+        proxy_pass http://127.0.0.1:5000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
     }
 }
 ```
@@ -107,15 +147,30 @@ server {
 ```bash
 cd /var/www/2345.desuwa.org/transspider
 pip install scrapy trafilatura meilisearch
-scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=500
+
+# 首次爬取
+scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000
+
+# 添加直接链接
+python add_direct_links.py
 ```
 
 #### 6. 设置定时任务
 
 ```bash
 # 每周日凌晨3点更新索引
-0 3 * * 0 cd /var/www/2345.desuwa.org/transspider && scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=500 >> /var/log/trans-spider.log 2>&1
+0 3 * * 0 cd /var/www/2345.desuwa.org/transspider && scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 >> /var/log/trans-spider.log 2>&1
+0 3 * * 1 cd /var/www/2345.desuwa.org && python add_direct_links.py >> /var/log/trans-spider.log 2>&1
 ```
+
+---
+
+### 生产环境安全建议
+
+1. **Meilisearch 密钥**：设置 `MEILI_MASTER_KEY` 并在配置中启用
+2. **API 速率限制**：当前基于内存，生产环境建议使用 Redis
+3. **数据库**：当前使用 JSON 文件，高并发环境建议使用数据库
+4. **HTTPS**：务必使用 HTTPS 部署
 
 ---
 
@@ -128,21 +183,22 @@ scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=500
 
 ### Meilisearch 配置
 
-在 `transspider/config.py` 中：
+在 `transspider/config.py` 中（开发环境默认值）：
 
 ```python
 MEILISEARCH_HOST = "localhost"
 MEILISEARCH_PORT = 7700
 MEILISEARCH_INDEX = "trans_resources"
+MEILISEARCH_API_KEY = ""  # 生产环境设置密钥
 ```
 
 ### PHP 前端配置
 
-在 `frontend/index.php` 中：
+通过环境变量或直接修改默认值：
 
 ```php
-$MEILISEARCH_HOST = 'localhost';
-$MEILISEARCH_PORT = '7700';
+$MEILISEARCH_HOST = getenv('MEILISEARCH_HOST') ?: 'localhost';
+$MEILISEARCH_PORT = getenv('MEILISEARCH_PORT') ?: '7700';
 $MEILISEARCH_INDEX = 'trans_resources';
 ```
 
