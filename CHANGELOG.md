@@ -10,12 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2026-03-18
 
 ### Added
-- Language field in Meilisearch documents for efficient language filtering
 - SITE_URL environment variable for OAuth callback configuration
 - MEILISEARCH_API_KEY support for API and crawler
+- Fetch 100 results before language filtering to avoid empty pagination
 
 ### Changed
-- Language filtering now pushed to Meilisearch layer instead of post-filtering
 - Filter logic changed from OR to AND for tags and domain
 
 ### Fixed

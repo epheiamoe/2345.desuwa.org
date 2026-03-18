@@ -351,17 +351,8 @@ def search():
         "cropLength": 200,
     }
 
-    # 添加筛选（防止注入）
+    # 添加筛选（标签和域名，语言从 URL 提取后过滤）
     filters = []
-
-    # 语言筛选 - 使用 Meilisearch 的 language 字段
-    if lang != "all":
-        if lang == "zh":
-            # 兼容旧版本：zh 代表所有中文
-            filters.append("(language = 'zh-cn' OR language = 'zh-hant')")
-        else:
-            escaped_lang = lang.replace("'", "\\'")
-            filters.append(f"language = '{escaped_lang}'")
 
     if tags:
         for tag in tags.split(","):
@@ -386,18 +377,53 @@ def search():
 
     hits = results.get("hits", [])
 
-    # 简繁体筛选（仍需后处理，因为 language 字段不区分简繁体）
-    if script != "all":
+    # 从 URL 路径检测语言并过滤（与 PHP 前端一致）
+    if lang != "all" or script != "all":
         filtered_hits = []
         for h in hits:
             url = h.get("url", "")
-            doc_script = "simplified"
-            if "/zh-hant" in url or "/zh-tw" in url or "/zh-hk" in url:
-                doc_script = "traditional"
 
-            if doc_script == script:
+            # 检测语言（与 PHP 前端逻辑一致）
+            doc_lang = "zh-cn"
+            doc_script = "simplified"
+
+            if "/zh-hant" in url or "/zh-tw" in url or "/zh-hk" in url:
+                doc_lang = "zh-hant"
+                doc_script = "traditional"
+            elif "/zh-cn" in url or "/zh-hans" in url:
+                doc_lang = "zh-cn"
+                doc_script = "simplified"
+            elif "/zh-" in url:
+                doc_lang = "zh-cn"
+                doc_script = "simplified"
+            elif url.endswith("/zh") or "/zh/" in url:
+                doc_lang = "zh-cn"
+                doc_script = "simplified"
+            elif "/en/" in url:
+                doc_lang = "en"
+            elif "/ja/" in url:
+                doc_lang = "ja"
+            elif "/es/" in url:
+                doc_lang = "es"
+            elif "/nl/" in url:
+                doc_lang = "nl"
+
+            # 语言匹配检查
+            if lang == "all":
+                lang_match = True
+            elif lang == "zh":
+                lang_match = doc_lang in ("zh-cn", "zh-hant")
+            else:
+                lang_match = doc_lang == lang
+
+            # 简繁体匹配检查
+            script_match = script == "all" or doc_script == script
+
+            if lang_match and script_match:
+                h["_language"] = doc_lang
                 h["_script"] = doc_script
                 filtered_hits.append(h)
+
         hits = filtered_hits
 
     # 分页
