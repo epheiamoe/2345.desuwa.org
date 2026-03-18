@@ -31,6 +31,19 @@ function toggleTheme() {
     updateThemeIcon(isDark);
 }
 
+function toggleSearchTips() {
+    var tips = document.getElementById('searchTips');
+    var btn = tips.previousElementSibling;
+    if (tips.style.display === 'none') {
+        tips.style.display = 'block';
+        tips.style.animation = 'fadeIn 0.3s ease';
+        btn.textContent = '▲ 搜索技巧';
+    } else {
+        tips.style.display = 'none';
+        btn.textContent = '▼ 搜索技巧';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initTheme();
 });

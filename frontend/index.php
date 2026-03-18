@@ -72,6 +72,15 @@ if (isset($_GET['tags'])) {
 // 处理站点筛选
 $selectedSite = isset($_GET['site']) ? trim($_GET['site']) : '';
 
+// 解析 site:example.com 语法并转换为 site 参数
+if ($query && !$selectedSite) {
+    if (preg_match('/site:(\S+)/i', $query, $matches)) {
+        $selectedSite = trim($matches[1]);
+        $query = trim(preg_replace('/site:\S+/i', '', $query));
+        $query = preg_replace('/\s+/', ' ', $query);
+    }
+}
+
 // 处理语言筛选
 $selectedLang = isset($_GET['lang']) ? trim($_GET['lang']) : '';
 $limit = 10; // 每页显示 10 条
@@ -208,7 +217,7 @@ if ($query) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2345.desuwa.org - 跨性别资源搜索</title>
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
     <div class="header">
@@ -296,10 +305,10 @@ if ($query) {
         
         <?php if ($query && !$error): ?>
             <div class="results-info">
-                找到约 <?php echo number_format($totalHits); ?> 个结果 
+                找到约 <?php echo number_format($totalHits); ?> 个结果
                 (<?php echo $searchTime; ?> 毫秒)
             </div>
-            
+
             <?php 
             // 统计搜索结果中的域名
             $domainCounts = [];
@@ -309,14 +318,23 @@ if ($query) {
                     $domainCounts[$d] = ($domainCounts[$d] ?? 0) + 1;
                 }
             }
-            if (count($domainCounts) > 1):
+            // 只要有结果就显示来源筛选（站点筛选时也显示）
+            if (!empty($results) && count($domainCounts) > 0):
             ?>
             <div class="domain-filter">
                 <span style="color:#666;">来源：</span>
+                <?php if ($selectedSite): ?>
+                <a href="?q=<?php echo urlencode($query); ?><?php if($selectedTags): foreach($selectedTags as $t): ?>&tags=<?php echo urlencode($t); endforeach; endif; ?><?php echo $selectedLang ? '&lang=' . urlencode($selectedLang) : ''; ?>" 
+                   class="domain-link" style="background:#d93025;color:#fff;border-color:#d93025;" title="清除站点筛选">
+                    <?php echo htmlspecialchars($selectedSite); ?> ✕
+                </a>
+                <?php endif; ?>
                 <?php 
                 $i = 0;
                 $totalDomains = count($domainCounts);
                 foreach (array_keys($domainCounts) as $domain): 
+                    // 跳过已选中的站点
+                    if ($domain === $selectedSite) continue;
                     $i++;
                     $show = $i <= 5;
                     $style = $show ? '' : 'display:none;';
@@ -440,8 +458,31 @@ if ($query) {
                 <h3>AI 智能摘要（开发中）</h3>
                 <p>此功能正在开发中，预计后续版本将提供LLM智能摘要功能。</p>
             </div>
-        <?php endif; ?>
-    </div>
+            <?php endif; ?>
+
+            <!-- 搜索技巧开关 -->
+            <button onclick="toggleSearchTips()" style="background:none;border:none;color:#1a73e8;cursor:pointer;font-size:13px;padding:8px 0;margin-top:10px;">
+                ▼ 搜索技巧
+            </button>
+
+            <!-- 搜索技巧提示 -->
+            <div class="search-tips" id="searchTips" style="display:none;">
+                <div class="tips-content">
+                    <h4>搜索语法</h4>
+                    <ul>
+                        <li><code>"精确短语"</code> - 精确匹配</li>
+                        <li><code>word1 OR word2</code> - 或匹配</li>
+                        <li><code>word1 AND word2</code> - 同时包含</li>
+                        <li><code>word1 NOT word2</code> - 包含前者排除后者</li>
+                        <li><code>word*</code> - 前缀匹配</li>
+                    </ul>
+                    <h4>快捷筛选</h4>
+                    <ul>
+                        <li><code>site:example.com</code> - 筛选指定站点</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     
     <div class="footer">
         <div class="footer-content">
@@ -458,6 +499,6 @@ if ($query) {
             </p>
         </div>
     </div>
-    <script src="search.js?v=6"></script>
+    <script src="search.js?v=7"></script>
 </body>
 </html>
