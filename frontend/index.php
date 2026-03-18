@@ -208,7 +208,7 @@ if ($query) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2345.desuwa.org - 跨性别资源搜索</title>
-    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
     <div class="header">
@@ -266,7 +266,20 @@ if ($query) {
                     <?php if ($i >= 8): ?>
                     <span class="tag-more" style="display:none;">
                     <?php endif; ?>
-                    <a href="?q=<?php echo urlencode($query); ?><?php echo $selectedLang ? '&lang=' . urlencode($selectedLang) : ''; ?>&tags=<?php echo urlencode($tag); ?>" 
+                    <?php 
+                    // 计算点击后的标签状态
+                    if (in_array($tag, $selectedTags)) {
+                        // 标签已选中，点击则取消选择
+                        $newTags = array_filter($selectedTags, function($t) use ($tag) { return $t !== $tag; });
+                        $tagLink = $newTags ? '&tags=' . urlencode(implode(',', $newTags)) : '';
+                    } else {
+                        // 标签未选中，点击则添加
+                        $newTags = array_merge($selectedTags, [$tag]);
+                        $tagLink = '&tags=' . urlencode(implode(',', $newTags));
+                    }
+                    $siteParam = $selectedSite ? '&site=' . urlencode($selectedSite) : '';
+                    ?>
+                    <a href="?q=<?php echo urlencode($query); ?><?php echo $selectedLang ? '&lang=' . urlencode($selectedLang) : ''; ?><?php echo $siteParam; ?><?php echo $tagLink; ?>" 
                        class="tag-link <?php echo in_array($tag, $selectedTags) ? 'active' : ''; ?>">
                         <?php echo htmlspecialchars($tag); ?>
                     </a>
@@ -274,9 +287,6 @@ if ($query) {
                     </span>
                     <?php endif; ?>
                 <?php endforeach; ?>
-                <?php if (count($availableTags) > 8): ?>
-                <a href="javascript:void(0)" onclick="document.querySelectorAll('.tag-more').forEach(el=>el.style.display='inline');this.style.display='none'" style="font-size:12px;color:#1a73e8;">更多</a>
-                <?php endif; ?>
             </div>
         </div>
         
