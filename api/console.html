@@ -146,9 +146,9 @@ print(resp.json())</pre>
     <script>
         let apiKey = '';
         
-        // 从 URL 获取 token
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
+        // 从 URL fragment 获取 token（#token=xxx，fragment 不会发送到服务器）
+        const hash = window.location.hash;
+        const token = hash ? hash.split('token=')[1] : null;
         
         if (!token) {
             // 没有 token，跳转登录
