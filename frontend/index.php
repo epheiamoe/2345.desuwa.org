@@ -276,8 +276,12 @@ if ($query) {
             <!-- 标签筛选 -->
             <div style="margin-top:10px;">
                 <span style="color:#666;font-size:13px;margin-right:8px;">标签：</span>
-                <?php foreach ($availableTags as $i => $tag): ?>
-                    <?php if ($i >= 8): ?>
+                <?php 
+                $totalTags = count($availableTags);
+                $visibleCount = 8;
+                foreach ($availableTags as $i => $tag): 
+                    // 在第9个标签前打开隐藏span
+                    if ($i == $visibleCount): ?>
                     <span class="tag-more" style="display:none;">
                     <?php endif; ?>
                     <?php 
@@ -297,7 +301,9 @@ if ($query) {
                        class="tag-link <?php echo in_array($tag, $selectedTags) ? 'active' : ''; ?>">
                         <?php echo htmlspecialchars($tag); ?>
                     </a>
-                    <?php if ($i >= 7): ?>
+                    <?php 
+                    // 在最后一个标签后关闭隐藏span
+                    if ($i == $totalTags - 1): ?>
                     </span>
                     <?php endif; ?>
                 <?php endforeach; ?>
