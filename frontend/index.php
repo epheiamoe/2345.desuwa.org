@@ -34,8 +34,8 @@ function getRealIp() {
     return $ip ?: '127.0.0.1';
 }
 
-// 可用标签列表（从 domains.json 加载）
-$availableTags = ['MtF', 'FtM', '社区', '性', '知识库', 'HRT', '指南', '报告', '学术', '影视', '音乐', '游戏', '小说', '法律', '医疗'];
+// 可用标签列表（与索引中的实际标签一致）
+$availableTags = ['MtF', 'FtM', '知识库', '社区', '性', '学术', 'HRT', '指南', '报告', '游戏', '影视', '小说', '法律'];
 
 // 可用语言列表
 $availableLanguages = [
@@ -301,6 +301,7 @@ if ($query) {
                     </span>
                     <?php endif; ?>
                 <?php endforeach; ?>
+                <button onclick="toggleMoreTags()" id="moreTagsBtn" style="background:none;border:none;color:#1a73e8;font-size:13px;cursor:pointer;padding:2px 6px;">更多</button>
             </div>
         </div>
         

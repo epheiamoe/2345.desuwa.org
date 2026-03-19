@@ -44,6 +44,16 @@ function toggleSearchTips() {
     }
 }
 
+function toggleMoreTags() {
+    var moreTags = document.querySelectorAll('.tag-more');
+    var btn = document.getElementById('moreTagsBtn');
+    var isHidden = moreTags[0] && moreTags[0].style.display === 'none';
+    moreTags.forEach(function(el) {
+        el.style.display = isHidden ? 'inline' : 'none';
+    });
+    btn.textContent = isHidden ? '收起' : '更多';
+}
+
 // 点击其他地方关闭下拉框
 document.addEventListener('click', function(e) {
     var dropdown = document.getElementById('searchTipsDropdown');
