@@ -126,24 +126,102 @@ cd /www/wwwroot/2345.desuwa.org && python3 add_direct_links.py >> /var/log/trans
 
 ### 部署到服务器
 
-1. 使用 scp 上传文件到服务器
-2. SSH 连接服务器检查
-3. 测试 curl 验证
-4. 如果更新了 API，需要重启：`pkill -f 'python.*api/app.py'; cd /www/wwwroot/2345.desuwa.org/api && nohup python3 app.py > /var/log/api.log 2>&1 &`
+### 重要：服务器不是 Git 部署
 
-### 注意事项
+仓库是后续才开源的，服务器使用 `scp` 上传文件而非 `git clone`：
+```bash
+# 上传安全修复后的文件
+scp docker-compose.yml myvps:/www/wwwroot/2345.desuwa.org/
+scp frontend/index.php myvps:/www/wwwroot/2345.desuwa.org/frontend/
+scp api/app.py myvps:/www/wwwroot/2345.desuwa.org/api/
+scp transspider/config.py myvps:/www/wwwroot/2345.desuwa.org/transspider/
+```
 
-1. **不要提交敏感文件**: .gitignore 已排除 api/.env, api/db.json, backup_meilisearch.json
-2. **CDN 缓存**: 上传后添加版本参数如 `?v=5`
-3. **暗黑模式**: CSS 中 light mode 在前，dark mode 覆盖在后
-4. **静态HTML**: docs 目录下的 HTML 不执行 PHP，链接要用 `/` 而不是 PHP 代码
-5. **语言规则解耦**: 修改 `frontend/language_rules.php` 或 `api/language_rules.py` 后无需重启服务
-6. **文档ID**: 使用 URL 的 MD5 hash 作为唯一 ID，确保跨进程一致性
+### 安全加固后的部署流程
+
+1. SSH 登录服务器：`ssh myvps`
+2. 备份现有文件
+3. 上传新文件
+4. 重启 Meilisearch（需要 Master Key）
+5. 配置环境变量（API Key）
+6. 重启 Flask API
+7. 更新 Nginx 配置（如需要传递环境变量给 PHP）
+8. 验证
+
+### 环境变量配置
+
+**Meilisearch Master Key**（用于生成其他 Key）：
+```bash
+MEILI_MASTER_KEY=your_master_key_here
+```
+
+**分层 API Key**：
+- **Search Key**：前端和 API 使用（只有 search 权限）
+- **Admin Key**：爬虫使用（有 documents.add 权限）
+
+创建命令：
+```bash
+# Search Key
+curl -X POST "http://127.0.0.1:7700/keys" \
+  -H "Authorization: Bearer $MEILI_MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Search-only key", "actions": ["search"], "indexes": ["trans_resources"], "expiresAt": null}'
+
+# Admin Key（爬虫用）
+curl -X POST "http://127.0.0.1:7700/keys" \
+  -H "Authorization: Bearer $MEILI_MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Admin key for crawler", "actions": ["documents.add", "documents.delete", "indexes.*"], "indexes": ["trans_resources"], "expiresAt": null}'
+```
+
+### PHP 环境变量传递（Nginx + PHP-FPM）
+
+PHP 代码中 `getenv()` 读取的是 PHP-FPM 进程的环境变量，不是 Nginx 的。需要在 Nginx 配置中使用 `fastcgi_param` 传递：
+```nginx
+location ~ \.php$ {
+    include fastcgi_params;
+    fastcgi_pass unix:/tmp/php-cgi-84.sock;
+    fastcgi_param MEILISEARCH_API_KEY your_search_key;
+}
+```
+
+### Flask API 重启
+
+```bash
+pkill -f 'python.*api/app.py'
+cd /www/wwwroot/2345.desuwa.org/api
+MEILISEARCH_API_KEY=your_search_key nohup python3 app.py > /var/log/api.log 2>&1 &
+```
+
+### Cron 任务（安全加固后）
+
+```bash
+# Meilisearch Master Key 和 Admin Key 需要在环境中可用
+MEILI_MASTER_KEY=xxx MEILISEARCH_API_KEY=yyy cd /www/wwwroot/2345.desuwa.org/transspider && scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 >> /var/log/trans_spider.log 2>&1
+```
+
+### 验证命令
+
+```bash
+# 验证 Meilisearch 需要认证（应返回 401）
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:7700/indexes
+
+# 验证前端搜索正常工作
+curl -s "https://2345.desuwa.org/?q=HRT" | grep "找到约"
+
+# 验证 API 需要用户认证
+curl -s "http://127.0.0.1:5000/api/search?q=test" | grep "缺少 API Key"
+```
 
 ## API 配置
 
 环境变量（参考 api/env.example）:
 - GITHUB_CLIENT_ID
 - GITHUB_CLIENT_SECRET
-- FLASK_SECRET
+- FLASK_SECRET（必填，无默认值）
 - ADMIN_USERS
+- MEILISEARCH_HOST
+- MEILISEARCH_PORT
+- MEILISEARCH_API_KEY（Search Key）
+- MEILI_MASTER_KEY（Master Key，用于生成其他 Key）
+- SITE_URL
