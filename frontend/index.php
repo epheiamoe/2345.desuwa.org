@@ -50,8 +50,15 @@ $availableLanguages = [
 
 // 获取索引总数
 $statsUrl = "http://{$MEILISEARCH_HOST}:{$MEILISEARCH_PORT}/indexes/{$MEILISEARCH_INDEX}/stats";
-$statsJson = @file_get_contents($statsUrl);
 $totalDocs = 0;
+$ch = curl_init($statsUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+if ($MEILISEARCH_API_KEY) {
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer {$MEILISEARCH_API_KEY}"]);
+}
+curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+$statsJson = curl_exec($ch);
+curl_close($ch);
 if ($statsJson) {
     $stats = json_decode($statsJson, true);
     $totalDocs = $stats['numberOfDocuments'] ?? 0;
