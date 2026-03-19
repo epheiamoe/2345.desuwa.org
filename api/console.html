@@ -94,10 +94,10 @@
                         </div>
                         <pre id="curlCmd" class="code-block"><span id="curlKey">YOUR_API_KEY</span></pre>
                         <pre id="curlPwshCmd" class="code-block hidden">$headers = @{ "Authorization" = "Bearer <span id="curlPwshKey">YOUR_API_KEY</span>" }
-Invoke-RestMethod -Uri "https://2345.desuwa.org/api/search?q=HRT" -Headers $headers</pre>
+Invoke-RestMethod -Uri "{{BASE_URL}}/api/search?q=HRT" -Headers $headers</pre>
                         <pre id="pythonCmd" class="code-block hidden">import requests
 
-resp = requests.get("https://2345.desuwa.org/api/search", params={
+resp = requests.get("{{BASE_URL}}/api/search", params={
     "q": "HRT"
 }, headers={
     "Authorization": "Bearer <span id="pythonKey">YOUR_API_KEY</span>"
@@ -403,7 +403,15 @@ print(resp.json())</pre>
             }
         }
         
+        function updateBaseUrl() {
+            const base = window.location.origin;
+            document.querySelectorAll('.code-block').forEach(el => {
+                el.innerHTML = el.innerHTML.replace(/{{BASE_URL}}/g, base);
+            });
+        }
+        
         loadKeyInfo();
+        updateBaseUrl();
     </script>
 </body>
 </html>
