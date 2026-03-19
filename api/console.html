@@ -8,15 +8,20 @@
     <style>
         .content { max-width: 900px; margin: 40px auto; padding: 20px; }
         h1 { color: #1a73e8; margin-bottom: 20px; }
+        h2 { color: #333; margin-top: 0; }
         .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        .card h2 { margin-top: 0; color: #333; }
+        .card.info { background: #e6f4ea; border-color: #1e8e3e; }
+        .card.info h2 { color: #1e8e3e; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+        .form-row { display: flex; gap: 15px; }
+        .form-row .form-group { flex: 1; }
         .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .btn-primary { background: #1a73e8; color: #fff; }
         .btn-danger { background: #d93025; color: #fff; }
         .btn-success { background: #1e8e3e; color: #fff; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
         th { background: #f5f5f5; }
@@ -28,6 +33,13 @@
         .tab-item.active { border-bottom-color: #1a73e8; color: #1a73e8; }
         .error { color: #d93025; background: #fce8e6; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
         .success { color: #1e8e3e; background: #e6f4ea; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .info-box { background: #e8f0fe; border: 1px solid #1a73e8; border-radius: 4px; padding: 10px 15px; margin-bottom: 15px; font-size: 14px; }
+        .info-box strong { color: #1a73e8; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow: auto; margin: 0; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+        .code-tabs { display: flex; gap: 10px; margin-bottom: 10px; }
+        .code-tab { padding: 4px 12px; background: #eee; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .code-tab.active { background: #1a73e8; color: #fff; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -62,7 +74,8 @@
             
             <div class="card">
                 <h2>使用统计</h2>
-                <p>已使用额度：<strong id="creditsUsed">-</strong></p>
+                <p>总额度：<strong id="creditsTotal">-</strong></p>
+                <p>已使用：<strong id="creditsUsed">-</strong></p>
                 <p>剩余额度：<strong id="creditsRemaining">-</strong></p>
             </div>
             
@@ -71,19 +84,15 @@
                 <p>API 文档：<a href="/docs/api.html" target="_blank">查看完整 API 文档</a></p>
                 <div style="margin-top:15px;">
                     <div style="margin-bottom:15px;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
-                            <strong>cURL</strong>
-                            <button onclick="copyCode('curlCmd')" style="padding:4px 12px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">复制</button>
+                        <div class="code-tabs">
+                            <button class="code-tab active" onclick="showCodeTab('curl')">cURL</button>
+                            <button class="code-tab" onclick="showCodeTab('curlPwsh')">PowerShell</button>
+                            <button class="code-tab" onclick="showCodeTab('python')">Python</button>
                         </div>
-                        <pre id="curlCmd" style="background:#f5f5f5;padding:10px;border-radius:4px;overflow:auto;margin:0;font-size:13px;">curl "https://2345.desuwa.org/api/search?q=HRT" \
-  -H "Authorization: Bearer <span id="curlKey">YOUR_API_KEY</span>"</pre>
-                    </div>
-                    <div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
-                            <strong>Python</strong>
-                            <button onclick="copyCode('pythonCmd')" style="padding:4px 12px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">复制</button>
-                        </div>
-                        <pre id="pythonCmd" style="background:#f5f5f5;padding:10px;border-radius:4px;overflow:auto;margin:0;font-size:13px;">import requests
+                        <pre id="curlCmd" class="code-block"><span id="curlKey">YOUR_API_KEY</span></pre>
+                        <pre id="curlPwshCmd" class="code-block hidden">$headers = @{ "Authorization" = "Bearer <span id="curlPwshKey">YOUR_API_KEY</span>" }
+Invoke-RestMethod -Uri "https://2345.desuwa.org/api/search?q=HRT" -Headers $headers</pre>
+                        <pre id="pythonCmd" class="code-block hidden">import requests
 
 resp = requests.get("https://2345.desuwa.org/api/search", params={
     "q": "HRT"
@@ -99,29 +108,77 @@ print(resp.json())</pre>
         <!-- 搜索测试 -->
         <div id="searchTab" style="display:none;">
             <div class="card">
-                <h2>API 测试</h2>
-                <div class="form-group">
-                    <label>搜索关键词</label>
-                    <input type="text" id="searchQuery" placeholder="输入搜索词" value="HRT">
+                <h2>API 搜索测试</h2>
+                <div class="form-row">
+                    <div class="form-group" style="flex:2;">
+                        <label>搜索关键词</label>
+                        <input type="text" id="searchQuery" placeholder="输入搜索词" value="HRT">
+                    </div>
+                    <div class="form-group">
+                        <label>语言筛选</label>
+                        <select id="searchLang">
+                            <option value="">全部</option>
+                            <option value="zh">中文</option>
+                            <option value="en">English</option>
+                            <option value="ja">日本語</option>
+                            <option value="es">Español</option>
+                            <option value="ko">한국어</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>简繁体</label>
+                        <select id="searchScript">
+                            <option value="all">全部</option>
+                            <option value="simplified">简体</option>
+                            <option value="traditional">繁体</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>语言筛选</label>
-                    <select id="searchLang" style="width:100%;padding:8px;">
-                        <option value="">全部</option>
-                        <option value="zh">中文</option>
-                        <option value="en">English</option>
-                        <option value="ja">日本語</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>标签筛选</label>
+                        <select id="searchTags">
+                            <option value="">全部标签</option>
+                            <option value="MtF">MtF</option>
+                            <option value="FtM">FtM</option>
+                            <option value="HRT">HRT</option>
+                            <option value="医疗">医疗</option>
+                            <option value="法律">法律</option>
+                            <option value="知识库">知识库</option>
+                            <option value="社区">社区</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>站点筛选</label>
+                        <input type="text" id="searchSite" placeholder="例如: mtf.wiki">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>每页数量 (1-20)</label>
+                        <input type="number" id="searchLimit" value="10" min="1" max="20">
+                    </div>
+                    <div class="form-group">
+                        <label>偏移量</label>
+                        <input type="number" id="searchOffset" value="0" min="0">
+                    </div>
                 </div>
                 <button class="btn btn-primary" onclick="testSearch()">搜索</button>
                 
                 <h3 style="margin-top:20px;">结果</h3>
-                <pre id="searchResult" style="background:#f5f5f5;padding:10px;overflow:auto;max-height:400px;">-</pre>
+                <pre id="searchResult" style="background:#f5f5f5;padding:10px;overflow:auto;max-height:500px;">-</pre>
             </div>
         </div>
         
         <!-- 管理面板 -->
         <div id="adminTabContent" style="display:none;">
+            <div class="card info" id="adminNotice">
+                <h2>管理员面板</h2>
+                <p>您拥有管理员权限。</p>
+                <div class="info-box">
+                    <strong>自部署提示：</strong>要将您的 GitHub 账号设为管理员，请在 <code>api/.env</code> 中设置 <code>ADMIN_USERS=your_github_username</code>
+                </div>
+            </div>
             <div class="card">
                 <h2>用户管理</h2>
                 <button class="btn btn-primary" onclick="loadUsers()">刷新用户列表</button>
@@ -130,13 +187,14 @@ print(resp.json())</pre>
                         <tr>
                             <th>GitHub</th>
                             <th>注册时间</th>
-                            <th>已用额度</th>
+                            <th>额度</th>
+                            <th>已用</th>
                             <th>状态</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="userList">
-                        <tr><td colspan="5">加载中...</td></tr>
+                        <tr><td colspan="6">加载中...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -170,8 +228,11 @@ print(resp.json())</pre>
             }
             apiKey = data.api_key;
             document.getElementById('apiKey').textContent = data.api_key;
-            document.getElementById('creditsUsed').textContent = data.credits_used;
-            document.getElementById('creditsRemaining').textContent = data.credits_remaining;
+            document.getElementById('creditsTotal').textContent = data.credits || 0;
+            document.getElementById('creditsUsed').textContent = data.credits_used || 0;
+            // 计算剩余额度
+            const remaining = (data.credits || 0) - (data.credits_used || 0);
+            document.getElementById('creditsRemaining').textContent = remaining;
             updateApiKeyExamples();
             
             // 检查是否是管理员
@@ -201,14 +262,32 @@ print(resp.json())</pre>
         async function testSearch() {
             const q = document.getElementById('searchQuery').value;
             const lang = document.getElementById('searchLang').value;
-            let url = '/api/search?q=' + encodeURIComponent(q);
-            if (lang) url += '&lang=' + lang;
+            const script = document.getElementById('searchScript').value;
+            const tags = document.getElementById('searchTags').value;
+            const site = document.getElementById('searchSite').value;
+            const limit = document.getElementById('searchLimit').value;
+            const offset = document.getElementById('searchOffset').value;
             
+            let params = [];
+            if (q) params.push('q=' + encodeURIComponent(q));
+            if (lang) params.push('lang=' + encodeURIComponent(lang));
+            if (script && script !== 'all') params.push('script=' + encodeURIComponent(script));
+            if (tags) params.push('tags=' + encodeURIComponent(tags));
+            if (site) params.push('domain=' + encodeURIComponent(site));
+            params.push('limit=' + encodeURIComponent(limit));
+            params.push('offset=' + encodeURIComponent(offset));
+            
+            const url = '/api/search?' + params.join('&');
             const data = await apiRequest(url);
             document.getElementById('searchResult').textContent = JSON.stringify(data, null, 2);
+            
             // 更新额度显示
-            document.getElementById('creditsUsed').textContent = data.credits_used;
-            document.getElementById('creditsRemaining').textContent = data.credits_remaining;
+            if (data.credits_used !== undefined) {
+                document.getElementById('creditsUsed').textContent = data.credits_used;
+            }
+            if (data.credits_remaining !== undefined) {
+                document.getElementById('creditsRemaining').textContent = data.credits_remaining;
+            }
         }
         
         async function loadUsers() {
@@ -222,18 +301,19 @@ print(resp.json())</pre>
             for (const user of data.users) {
                 const status = user.banned ? '<span class="banned">已封禁</span>' : '<span class="active">正常</span>';
                 const btn = user.banned 
-                    ? `<button class="btn btn-success" onclick="unbanUser('${user.id}')">解封</button>`
-                    : `<button class="btn btn-danger" onclick="banUser('${user.id}')">封禁</button>`;
+                    ? `<button class="btn btn-success btn-sm" onclick="unbanUser('${user.id}')">解封</button>`
+                    : `<button class="btn btn-danger btn-sm" onclick="banUser('${user.id}')">封禁</button>`;
                 
                 html += `<tr>
-                    <td>${user.github_login}</td>
-                    <td>${user.created_at}</td>
-                    <td>${user.credits_used}/${user.credits}</td>
+                    <td>${user.github_login || user.id}</td>
+                    <td>${user.created_at || '-'}</td>
+                    <td>${user.credits || 0}</td>
+                    <td>${user.credits_used || 0}</td>
                     <td>${status}</td>
                     <td>${btn}</td>
                 </tr>`;
             }
-            document.getElementById('userList').innerHTML = html || '<tr><td colspan="5">暂无用户</td></tr>';
+            document.getElementById('userList').innerHTML = html || '<tr><td colspan="6">暂无用户</td></tr>';
         }
         
         async function banUser(userId) {
@@ -269,6 +349,13 @@ print(resp.json())</pre>
             if (tab === 'admin') loadUsers();
         }
         
+        function showCodeTab(tab) {
+            document.querySelectorAll('.code-block').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.code-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab + 'Cmd').classList.remove('hidden');
+            event.target.classList.add('active');
+        }
+        
         function showMessage(msg, type) {
             document.getElementById('message').innerHTML = `<div class="${type}">${msg}</div>`;
         }
@@ -284,7 +371,8 @@ print(resp.json())</pre>
         
         function copyCode(elementId) {
             const el = document.getElementById(elementId);
-            const text = el.innerText;
+            // 去除 span 标签获取纯文本
+            const text = el.innerHTML.replace(/<[^>]+>/g, '').trim();
             navigator.clipboard.writeText(text).then(() => {
                 showMessage('已复制到剪贴板', 'success');
             }).catch(() => {
@@ -295,6 +383,7 @@ print(resp.json())</pre>
         function updateApiKeyExamples() {
             if (apiKey) {
                 document.getElementById('curlKey').textContent = apiKey;
+                document.getElementById('curlPwshKey').textContent = apiKey;
                 document.getElementById('pythonKey').textContent = apiKey;
             }
         }
