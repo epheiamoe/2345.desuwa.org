@@ -448,19 +448,36 @@ body.dark .ai-overview p {
 }
 
 body.dark .search-tips-dropdown {
-    background: #303134;
-    border-color: #5f6368;
+    background: #303134 !important;
+    border-color: #5f6368 !important;
 }
 
 body.dark .search-tips-dropdown code {
-    background: #3c4043;
-    color: #8ab4f8;
+    background: #3c4043 !important;
+    color: #8ab4f8 !important;
 }
 
 body.dark #tipsBtn {
-    background: #303134;
-    border-color: #5f6368;
-    color: #9aa0a6;
+    background: #303134 !important;
+    border-color: #5f6368 !important;
+    color: #9aa0a6 !important;
+}
+
+body.dark .search-tips-dropdown > div {
+    color: #bdc1c6 !important;
+}
+
+body.dark .search-tips-dropdown strong {
+    color: #e8eaed !important;
+}
+
+body.dark .search-tips-dropdown code {
+    background: #3c4043 !important;
+    color: #8ab4f8 !important;
+}
+
+body.dark #pwa-hint {
+    border-color: #5f6368 !important;
 }
 
 body.dark .error-msg {
