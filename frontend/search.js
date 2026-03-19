@@ -56,4 +56,35 @@ document.addEventListener('click', function(e) {
 
 document.addEventListener('DOMContentLoaded', function() {
     initTheme();
+    
+    // 显示PWA安装提示（仅JS可用时）
+    var pwaHint = document.getElementById('pwa-hint');
+    if (pwaHint && 'serviceWorker' in navigator) {
+        pwaHint.style.display = 'block';
+    }
 });
+
+// PWA 安装
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+});
+
+function installPWA() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(choiceResult) {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the PWA install');
+            }
+            deferredPrompt = null;
+            var btn = document.getElementById('pwa-install-btn');
+            if (btn) {
+                btn.textContent = '已安装';
+                btn.disabled = true;
+            }
+        });
+    }
+}

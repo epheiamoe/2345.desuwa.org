@@ -25,6 +25,9 @@ from flask_cors import CORS
 import meilisearch
 import requests
 
+# 引入语言检测规则
+from language_rules import detect_language_from_url, language_matches
+
 app = Flask(__name__)
 CORS(app)
 
@@ -386,36 +389,17 @@ def search():
         for h in hits:
             url = h.get("url", "")
 
-            # 检测语言（与 PHP 前端逻辑一致）
-            doc_lang = "zh-cn"
-            doc_script = "simplified"
+            # 使用统一的语言检测函数
+            doc_lang = detect_language_from_url(url)
 
-            if "/zh-hant" in url or "/zh-tw" in url or "/zh-hk" in url:
-                doc_lang = "zh-hant"
-                doc_script = "traditional"
-            elif "/zh-cn" in url or "/zh-hans" in url:
-                doc_lang = "zh-cn"
-                doc_script = "simplified"
-            elif "/zh-" in url:
-                doc_lang = "zh-cn"
-                doc_script = "simplified"
-            elif url.endswith("/zh") or "/zh/" in url:
-                doc_lang = "zh-cn"
-                doc_script = "simplified"
-            elif "/en/" in url:
-                doc_lang = "en"
-            elif "/ja/" in url:
-                doc_lang = "ja"
-            elif "/es/" in url:
-                doc_lang = "es"
-            elif "/nl/" in url:
-                doc_lang = "nl"
+            # 判断简繁体
+            doc_script = "traditional" if doc_lang == "zh-hant" else "simplified"
 
             # 语言匹配检查
             if lang == "all":
                 lang_match = True
             elif lang == "zh":
-                lang_match = doc_lang in ("zh-cn", "zh-hant")
+                lang_match = doc_lang in ("zh-cn", "zh-hant", "zh")
             else:
                 lang_match = doc_lang == lang
 

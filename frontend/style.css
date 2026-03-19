@@ -187,12 +187,22 @@ body {
     margin-right: 4px;
 }
 
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 20px;
+}
+
 .pagination a, .pagination span {
-    padding: 8px 16px;
+    padding: 6px 12px;
     border: 1px solid #dfe1e5;
     border-radius: 4px;
     text-decoration: none;
     color: #1a73e8;
+    min-width: 40px;
+    text-align: center;
 }
 
 .pagination a:hover {
@@ -203,6 +213,29 @@ body {
     background: #1a73e8;
     color: white;
     border-color: #1a73e8;
+}
+
+.pagination .page-jump {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pagination .page-jump input {
+    width: 50px;
+    padding: 6px 8px;
+    border: 1px solid #dfe1e5;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.pagination .page-jump button {
+    padding: 6px 12px;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .no-results {
@@ -359,6 +392,11 @@ body.dark .pagination a, body.dark .pagination span {
     background: #303134;
     border-color: #5f6368;
     color: #8ab4f8;
+}
+
+body.dark .pagination .page-jump button {
+    background: #8ab4f8;
+    color: #202124;
 }
 
 body.dark .result-title a {

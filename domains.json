@@ -8,7 +8,7 @@
     {"domain": "genderdysphoria.fyi", "name": "这就是性别烦躁", "url": "https://genderdysphoria.fyi/zh/", "tags": ["MtF", "FtM", "知识库"]},
     {"domain": "mtf.party", "name": "MtF 指南针", "url": "https://mtf.party/", "tags": ["MtF", "知识库"]},
     {"domain": "hub.mtf.party", "name": "MtF Hub", "url": "https://hub.mtf.party/explore", "tags": ["MtF", "知识库"]},
-    {"domain": "awesometrans.github.io", "name": "awesome trans", "url": "https://awesometrans.github.io/awesometrans_zh/", "tags": ["MtF", "FtM", "知识库"]},
+
     {"domain": "viva-la-vita.org", "name": "生如夏花", "url": "https://viva-la-vita.org/", "tags": ["社区", "性"]},
     {"domain": "one-among.us", "name": "那些秋叶", "url": "https://one-among.us/", "tags": ["社区"]},
     {"domain": "transinacademia.org", "name": "跨性别学术小组", "url": "https://transinacademia.org/", "tags": ["社区", "学术"]},
@@ -21,8 +21,7 @@
     {"domain": "project-trans.org", "name": "Project Trans", "url": "https://project-trans.org/", "tags": ["MtF", "FtM", "社区"]},
     {"domain": "docs.transonline.org.cn", "name": "跨性别在线·文档库", "url": "https://docs.transonline.org.cn/", "tags": ["知识库"]},
     {"domain": "cnlgbtdata.com", "name": "LGBT 文件资料·索引库", "url": "https://cnlgbtdata.com/", "tags": ["知识库"]},
-    {"domain": "digital.transchinese.org", "name": "跨性别与多元性别文档档案库", "url": "https://digital.transchinese.org/", "tags": ["知识库", "学术"]},
-    {"domain": "moegirl.org.cn", "name": "萌娘百科", "url": "https://zh.moegirl.org.cn/", "tags": ["音乐", "影视"]}
+    {"domain": "digital.transchinese.org", "name": "跨性别与多元性别文档档案库", "url": "https://digital.transchinese.org/", "tags": ["知识库", "学术"]}
   ],
   "direct_urls": [
     {"url": "https://store.steampowered.com/app/504230", "title": "Celeste", "tags": ["游戏"]},

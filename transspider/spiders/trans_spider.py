@@ -85,6 +85,14 @@ class TransSpider(scrapy.Spider):
         if domain.startswith("www."):
             domain = domain[4:]
 
+        # 检查响应是否为文本（跳过图片等非文本内容）
+        content_type = response.headers.get("Content-Type", b"").decode(
+            "latin-1", "ignore"
+        )
+        if not content_type.startswith(("text/", "application/xhtml")):
+            self.logger.warning(f"跳过非文本内容: {url} (Content-Type: {content_type})")
+            return
+
         # 使用 trafilatura 提取正文
         content = ""
         try:
@@ -100,7 +108,10 @@ class TransSpider(scrapy.Spider):
         # 创建 Item
         item = TransResourceItem()
         item["url"] = url
-        item["title"] = response.css("title::text").get() or ""
+        try:
+            item["title"] = response.css("title::text").get() or ""
+        except Exception:
+            item["title"] = ""
         item["domain"] = domain
         item["content"] = content or ""
         item["tags"] = self.domain_tags.get(domain, [])  # 从 domains.json 获取标签

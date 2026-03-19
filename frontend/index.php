@@ -11,6 +11,9 @@
  * - MEILISEARCH_INDEX: 索引名称
  */
 
+// 引入语言检测规则（自部署者可自定义修改此文件）
+include_once __DIR__ . '/language_rules.php';
+
 // Meilisearch 配置（本地开发用）
 $MEILISEARCH_HOST = getenv('MEILISEARCH_HOST') ?: 'localhost';
 $MEILISEARCH_PORT = getenv('MEILISEARCH_PORT') ?: '7700';
@@ -175,30 +178,7 @@ if ($query) {
                 $filteredResults = [];
                 foreach ($results as $r) {
                     $url = $r['url'] ?? '';
-                    $lang = 'zh-cn';  // 默认中文简体
-                    if (preg_match('/\/zh-hant\//', $url) || preg_match('/\/zh-tw\//', $url) || preg_match('/\/zh-hk\//', $url)) {
-                        $lang = 'zh-hant';
-                    } elseif (preg_match('/\/zh-cn\//', $url) || preg_match('/\/zh-\w+\//', $url)) {
-                        $lang = 'zh-cn';
-                    } elseif (preg_match('/\/en\//', $url)) {
-                        $lang = 'en';
-                    } elseif (preg_match('/\/ja\//', $url)) {
-                        $lang = 'ja';
-                    } elseif (preg_match('/\/es\//', $url)) {
-                        $lang = 'es';
-                    } elseif (preg_match('/\/nl\//', $url)) {
-                        $lang = 'nl';
-                    }
-                    
-                    // 兼容处理：zh = 所有中文
-                    $match = false;
-                    if ($selectedLang === 'zh') {
-                        $match = in_array($lang, ['zh-cn', 'zh-hant']);
-                    } else {
-                        $match = ($lang === $selectedLang);
-                    }
-                    
-                    if ($match) {
+                    if (languageMatches($url, $selectedLang)) {
                         $filteredResults[] = $r;
                     }
                 }
@@ -217,9 +197,22 @@ if ($query) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2345.desuwa.org - 跨性别资源搜索</title>
-    <link rel="stylesheet" href="style.css?v=12">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <link rel="icon" type="image/svg+xml" href="/icon.svg">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(function(registration) {
+            console.log('ServiceWorker registration successful');
+        }).catch(function(err) {
+            console.log('ServiceWorker registration failed: ', err);
+        });
+    }
+    </script>
     <div class="header">
         <a href="<?php echo $selectedLang ? '/?lang=' . htmlspecialchars($selectedLang) : '/'; ?>" class="logo">2345.desuwa.org</a>
         <div class="nav-links">
@@ -428,28 +421,85 @@ if ($query) {
                     if ($selectedSite) {
                         $baseParams .= '&site=' . urlencode($selectedSite);
                     }
+                    
+                    // Google 风格分页
+                    $showPages = 7; // 显示的页码数量（奇数以便对称）
+                    $half = floor($showPages / 2);
                 ?>
                 <div class="pagination">
                     <?php if ($page > 1): ?>
                         <a href="?<?php echo $baseParams; ?>&page=<?php echo $page-1; ?>">上一页</a>
                     <?php endif; ?>
                     
-                    <?php
-                    $startPage = max(1, $page - 2);
-                    $endPage = min($totalPages, $page + 2);
-                    for ($i = $startPage; $i <= $endPage; $i++):
-                    ?>
-                        <?php if ($i == $page): ?>
-                            <span class="current"><?php echo $i; ?></span>
-                        <?php else: ?>
-                            <a href="?<?php echo $baseParams; ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                    <?php if ($totalPages <= $showPages + 2): ?>
+                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                            <?php if ($i == $page): ?>
+                                <span class="current"><?php echo $i; ?></span>
+                            <?php else: ?>
+                                <a href="?<?php echo $baseParams; ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+                    <?php else: ?>
+                        <?php
+                        $startPage = max(1, $page - $half);
+                        $endPage = min($totalPages, $page + $half);
+                        
+                        // 确保显示足够的页码
+                        if ($startPage > $totalPages - $showPages + 1) {
+                            $startPage = $totalPages - $showPages + 1;
+                            $endPage = $totalPages;
+                        }
+                        if ($endPage < $showPages) {
+                            $endPage = $showPages;
+                            $startPage = 1;
+                        }
+                        ?>
+                        
+                        <?php if ($startPage > 1): ?>
+                            <a href="?<?php echo $baseParams; ?>&page=1">1</a>
+                            <?php if ($startPage > 2): ?>
+                                <span style="padding: 6px 4px;">...</span>
+                            <?php endif; ?>
                         <?php endif; ?>
-                    <?php endfor; ?>
+                        
+                        <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
+                            <?php if ($i == $page): ?>
+                                <span class="current"><?php echo $i; ?></span>
+                            <?php else: ?>
+                                <a href="?<?php echo $baseParams; ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+                        
+                        <?php if ($endPage < $totalPages): ?>
+                            <?php if ($endPage < $totalPages - 1): ?>
+                                <span style="padding: 6px 4px;">...</span>
+                            <?php endif; ?>
+                            <a href="?<?php echo $baseParams; ?>&page=<?php echo $totalPages; ?>"><?php echo $totalPages; ?></a>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    
+                    <div class="page-jump">
+                        <input type="number" id="pageInput" min="1" max="<?php echo $totalPages; ?>" placeholder="页码">
+                        <button onclick="jumpToPage()">跳转</button>
+                    </div>
                     
                     <?php if ($page < $totalPages): ?>
                         <a href="?<?php echo $baseParams; ?>&page=<?php echo $page+1; ?>">下一页</a>
                     <?php endif; ?>
                 </div>
+                <script>
+                function jumpToPage() {
+                    var input = document.getElementById('pageInput');
+                    var page = input.value;
+                    if (page >= 1 && page <= <?php echo $totalPages; ?>) {
+                        var baseUrl = '?' + <?php echo json_encode($baseParams); ?>;
+                        window.location.href = baseUrl + '&page=' + page;
+                    }
+                }
+                document.getElementById('pageInput').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') jumpToPage();
+                });
+                </script>
                 <?php endif; ?>
             <?php endif; ?>
             
@@ -473,7 +523,11 @@ if ($query) {
                         <div style="margin-bottom:6px;"><code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;color:#1a73e8;">word1 NOT word2</code> 排除</div>
                         <div style="margin-bottom:10px;"><code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;color:#1a73e8;">word*</code> 前缀匹配</div>
                         <div><strong>快捷筛选</strong></div>
-                        <div><code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;color:#1a73e8;">site:example.com</code> 站点筛选</div>
+                        <div style="margin-bottom:10px;"><code style="background:#f1f3f4;padding:2px 6px;border-radius:3px;color:#1a73e8;">site:example.com</code> 站点筛选</div>
+                        <div id="pwa-hint" style="display:none;border-top:1px solid #dfe1e5;padding-top:10px;margin-top:8px;">
+                            <div style="margin-bottom:6px;"><strong>PWA 应用</strong></div>
+                            <div style="margin-bottom:6px;"><button onclick="installPWA()" id="pwa-install-btn" style="background:#1a73e8;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px;">安装应用</button></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -496,6 +550,6 @@ if ($query) {
             </p>
         </div>
     </div>
-    <script src="search.js?v=7"></script>
+    <script src="search.js?v=9"></script>
 </body>
 </html>

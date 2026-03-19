@@ -120,9 +120,11 @@ class MeilisearchPipeline:
             spider.logger.warning("Meilisearch 未初始化，跳过推送")
             return item
 
-        # 使用 URL 的 hash 作为唯一 ID（因为 URL 包含非法字符）
+        # 使用 URL 的 MD5 hash 作为唯一 ID（确保跨进程一致性）
+        import hashlib
+
         url = item.get("url", "")
-        doc_id = abs(hash(url)) % 100000000
+        doc_id = int(hashlib.md5(url.encode("utf-8")).hexdigest()[:8], 16) % 100000000
 
         doc = {
             "id": doc_id,
