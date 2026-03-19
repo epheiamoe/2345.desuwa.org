@@ -84,10 +84,13 @@
                 <p>API 文档：<a href="/docs/api.html" target="_blank">查看完整 API 文档</a></p>
                 <div style="margin-top:15px;">
                     <div style="margin-bottom:15px;">
-                        <div class="code-tabs">
-                            <button class="code-tab active" onclick="showCodeTab('curl')">cURL</button>
-                            <button class="code-tab" onclick="showCodeTab('curlPwsh')">PowerShell</button>
-                            <button class="code-tab" onclick="showCodeTab('python')">Python</button>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <div class="code-tabs" style="margin-bottom:0;">
+                                <button class="code-tab active" onclick="showCodeTab('curl')">cURL</button>
+                                <button class="code-tab" onclick="showCodeTab('curlPwsh')">PowerShell</button>
+                                <button class="code-tab" onclick="showCodeTab('python')">Python</button>
+                            </div>
+                            <button id="copyCodeBtn" class="btn btn-primary btn-sm" onclick="copyCurrentCode()">复制</button>
                         </div>
                         <pre id="curlCmd" class="code-block"><span id="curlKey">YOUR_API_KEY</span></pre>
                         <pre id="curlPwshCmd" class="code-block hidden">$headers = @{ "Authorization" = "Bearer <span id="curlPwshKey">YOUR_API_KEY</span>" }
@@ -349,7 +352,10 @@ print(resp.json())</pre>
             if (tab === 'admin') loadUsers();
         }
         
+        let currentCodeTab = 'curl';
+        
         function showCodeTab(tab) {
+            currentCodeTab = tab;
             document.querySelectorAll('.code-block').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.code-tab').forEach(el => el.classList.remove('active'));
             document.getElementById(tab + 'Cmd').classList.remove('hidden');
@@ -369,9 +375,18 @@ print(resp.json())</pre>
             });
         }
         
+        function copyCurrentCode() {
+            const el = document.getElementById(currentCodeTab + 'Cmd');
+            const text = el.innerHTML.replace(/<[^>]+>/g, '').trim();
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('代码已复制到剪贴板', 'success');
+            }).catch(() => {
+                showMessage('复制失败', 'error');
+            });
+        }
+        
         function copyCode(elementId) {
             const el = document.getElementById(elementId);
-            // 去除 span 标签获取纯文本
             const text = el.innerHTML.replace(/<[^>]+>/g, '').trim();
             navigator.clipboard.writeText(text).then(() => {
                 showMessage('已复制到剪贴板', 'success');
