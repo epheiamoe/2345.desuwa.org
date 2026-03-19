@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- PWA application support (manifest.json, sw.js, icons)
+- Language detection rules decoupled from code (frontend/language_rules.php, api/language_rules.py)
+- Support for 15+ languages (zh-cn, zh-hant, en, ja, es, nl, ko, fr, de, pl, el, hu, ru, etc.)
+- Google-style pagination with page jump input
+- Domain default language mapping for sites without language paths
+- URL pattern rules for fine-grained language detection
+
+### Changed
+- Frontend pagination now shows all pages with ellipsis (Google-style)
+- search.js v9 with PWA install prompt
+
+### Fixed
+- Duplicate indexing issue - now uses MD5 hash instead of Python hash() for stable document IDs across processes
+- Spider now skips non-text content (images, PDFs)
+- Genderdysphoria.fyi correctly detected as English (not Chinese)
+- Credits persistence fix in API
+
 ## [1.1.0] - 2026-03-18
 
 ### Added
