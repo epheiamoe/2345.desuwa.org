@@ -81,7 +81,10 @@ $URL_PATTERN_RULES = [
 ### domains.json 结构
 
 - `domains`: 需要爬取的网站列表（只爬取这些域名）
-- `direct_urls`: 直接添加到索引的 URL（不爬取）
+- `direct_urls`: 直接添加到索引的 URL（不爬取），用于：
+  - Steam 游戏页面（无法爬取）
+  - 社交媒体帖子（Twitter、Reddit 等）
+  - 其他无法通过爬虫获取的页面
 
 ### 部署命令
 
@@ -92,7 +95,7 @@ docker-compose up -d
 # 2. 爬取网站
 cd transspider && scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000
 
-# 3. 添加直接链接
+# 3. 添加直接链接（Steam游戏、社交媒体等）
 cd .. && python add_direct_links.py
 ```
 
