@@ -14,10 +14,10 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOMAINS_JSON = os.path.join(PROJECT_ROOT, "domains.json")
 
 # Meilisearch 配置
-MEILISEARCH_HOST = "localhost"
-MEILISEARCH_PORT = 7700
+MEILISEARCH_HOST = os.environ.get("MEILISEARCH_HOST", "localhost")
+MEILISEARCH_PORT = int(os.environ.get("MEILISEARCH_PORT", "7700"))
 MEILISEARCH_INDEX = "trans_resources"
-MEILISEARCH_API_KEY = ""  # 本地开发无需密钥
+MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_API_KEY", "")
 
 # 爬虫配置
 # 是否使用 WARP 代理（默认关闭，仅在 IP 被封时手动开启）

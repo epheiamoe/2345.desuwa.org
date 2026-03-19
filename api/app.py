@@ -29,13 +29,14 @@ import requests
 from language_rules import detect_language_from_url, language_matches
 
 app = Flask(__name__)
-CORS(app)
 
 # 配置 - 输出 UTF-8 而非 unicode 转义
 app.json.ensure_ascii = False
 
 # 配置
-app.secret_key = os.environ.get("FLASK_SECRET", "dev-secret-change-in-production")
+app.secret_key = os.environ.get("FLASK_SECRET")
+if not app.secret_key:
+    raise RuntimeError("FLASK_SECRET environment variable is required")
 
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
@@ -44,6 +45,17 @@ MEILISEARCH_PORT = os.environ.get("MEILISEARCH_PORT", "7700")
 MEILISEARCH_INDEX = os.environ.get("MEILISEARCH_INDEX", "trans_resources")
 MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_API_KEY", "")
 SITE_URL = os.environ.get("SITE_URL", "https://2345.desuwa.org")
+
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [SITE_URL],
+            "methods": ["GET", "POST"],
+            "allow_headers": ["Authorization", "Content-Type"],
+        }
+    },
+)
 
 # 管理员配置（GitHub username）
 ADMIN_USERS = [
@@ -251,7 +263,7 @@ def auth_callback():
     save_db(db)
 
     # 跳转回控制台
-    return redirect("/api/console.html?token=" + user["api_key"])
+    return redirect("/api/console.html#token=" + user["api_key"])
 
 
 @app.route("/api/auth/logout")
@@ -360,15 +372,38 @@ def search():
     # 添加筛选（标签和域名，语言从 URL 提取后过滤）
     filters = []
 
+    VALID_TAGS = {
+        "MtF",
+        "FtM",
+        "社区",
+        "性",
+        "知识库",
+        "HRT",
+        "指南",
+        "报告",
+        "学术",
+        "影视",
+        "音乐",
+        "游戏",
+        "小说",
+        "法律",
+        "医疗",
+    }
+
     if tags:
         for tag in tags.split(","):
             tag = tag.strip()
-            if tag:
-                escaped_tag = tag.replace("'", "\\'")
-                filters.append(f"tags = '{escaped_tag}'")
+            if tag in VALID_TAGS:
+                filters.append(f"tags = '{tag}'")
+
     if domain:
-        escaped_domain = domain.replace("'", "\\'")
-        filters.append(f"domain = '{escaped_domain}'")
+        import re
+
+        if re.match(
+            r"^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
+            domain,
+        ):
+            filters.append(f"domain = '{domain}'")
 
     if filters:
         search_params["filter"] = " AND ".join(filters)
@@ -379,7 +414,8 @@ def search():
         index = client.index(MEILISEARCH_INDEX)
         results = index.search(query, search_params)
     except Exception as e:
-        return jsonify({"error": f"搜索服务错误: {str(e)}"}), 500
+        app.logger.error(f"Meilisearch search failed: {e}", exc_info=True)
+        return jsonify({"error": "搜索服务暂时不可用"}), 500
 
     hits = results.get("hits", [])
 

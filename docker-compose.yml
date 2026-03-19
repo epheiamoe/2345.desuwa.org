@@ -5,12 +5,12 @@ services:
     image: getmeili/meilisearch:latest
     container_name: trans_meilisearch
     ports:
-      - "7700:7700"  # 生产环境改为 "127.0.0.1:7700:7700" 只绑定本地
+      - "127.0.0.1:7700:7700"
     volumes:
       - meilisearch_data:/meili_data
     environment:
-      - MEILI_ENV=development  # 生产环境改为 production
-      # - MEILI_MASTER_KEY=your_master_key  # 生产环境取消注释并设置密钥
+      - MEILI_ENV=production
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7700/health"]

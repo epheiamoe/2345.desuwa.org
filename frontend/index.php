@@ -14,10 +14,11 @@
 // 引入语言检测规则（自部署者可自定义修改此文件）
 include_once __DIR__ . '/language_rules.php';
 
-// Meilisearch 配置（本地开发用）
+// Meilisearch 配置
 $MEILISEARCH_HOST = getenv('MEILISEARCH_HOST') ?: 'localhost';
 $MEILISEARCH_PORT = getenv('MEILISEARCH_PORT') ?: '7700';
 $MEILISEARCH_INDEX = 'trans_resources';
+$MEILISEARCH_API_KEY = getenv('MEILISEARCH_API_KEY') ?: '';
 
 // 获取真实 IP（支持代理）
 function getRealIp() {
@@ -134,21 +135,23 @@ if ($query) {
             'cropLength' => 200,
         ];
         
-        // 添加标签筛选
+        // 添加标签筛选（白名单验证）
         if (!empty($selectedTags)) {
             $filters = [];
             foreach ($selectedTags as $tag) {
-                $escapedTag = htmlspecialchars(str_replace("'", "\\'", $tag), ENT_QUOTES, 'UTF-8');
-                $filters[] = "tags = '{$escapedTag}'";
+                if (in_array($tag, $availableTags, true)) {
+                    $filters[] = "tags = '{$tag}'";
+                }
             }
-            $searchParams['filter'] = implode(' OR ', $filters);
+            if (!empty($filters)) {
+                $searchParams['filter'] = implode(' OR ', $filters);
+            }
         }
         
-        // 添加站点筛选
-        if (!empty($selectedSite)) {
+        // 添加站点筛选（严格域名格式校验）
+        if (!empty($selectedSite) && preg_match('/^[a-zA-Z0-9][a-zA-Z0-9.-]{1,253}[a-zA-Z0-9]$/', $selectedSite)) {
             $existingFilter = $searchParams['filter'] ?? '';
-            $escapedSite = htmlspecialchars(str_replace("'", "\\'", $selectedSite), ENT_QUOTES, 'UTF-8');
-            $siteFilter = "domain = '{$escapedSite}'";
+            $siteFilter = "domain = '{$selectedSite}'";
             $searchParams['filter'] = $existingFilter ? "({$existingFilter}) AND {$siteFilter}" : $siteFilter;
         }
         
@@ -158,9 +161,11 @@ if ($query) {
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-        ]);
+        $headers = ['Content-Type: application/json'];
+        if ($MEILISEARCH_API_KEY) {
+            $headers[] = "Authorization: Bearer {$MEILISEARCH_API_KEY}";
+        }
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         
         $response = curl_exec($ch);
