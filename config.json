@@ -1,0 +1,63 @@
+{
+  "site": {
+    "name": "2345.desuwa.org",
+    "title": "跨性别资源搜索",
+    "url": "https://2345.desuwa.org",
+    "github_repo": "https://github.com/epheiamoe/2345.desuwa.org",
+    "partner_site": "https://2345.lgbt"
+  },
+  "search": {
+    "index_name": "trans_resources",
+    "default_limit": 10,
+    "max_limit": 100,
+    "content_max_length": 5000
+  },
+  "tags": {
+    "available": ["MtF", "FtM", "知识库", "HRT", "手术", "法律", "心理", "社群", "工具", "游戏", "Steam", "影视", "小说", "指南", "学术", "社区", "性", "报告"],
+    "display_names": {
+      "MtF": "MtF",
+      "FtM": "FtM",
+      "知识库": "知识库",
+      "HRT": "HRT",
+      "手术": "手术",
+      "法律": "法律",
+      "心理": "心理",
+      "社群": "社群",
+      "工具": "工具",
+      "游戏": "游戏",
+      "Steam": "Steam",
+      "影视": "影视",
+      "小说": "小说",
+      "指南": "指南",
+      "学术": "学术",
+      "社区": "社区",
+      "性": "性",
+      "报告": "报告"
+    }
+  },
+  "rate_limit": {
+    "per_minute": 10,
+    "per_day": 1000,
+    "per_month": 2000
+  },
+  "languages": {
+    "supported": ["zh-cn", "zh-hant", "en", "ja", "es", "nl", "ko", "fr", "de", "pl", "el", "hu", "ru"],
+    "default": "zh-cn",
+    "path_map": {
+      "zh-cn": ["zh-cn", "zh-hans", "zh"],
+      "zh-hant": ["zh-hant", "zh-hk", "zh-tw", "zh-mo"]
+    }
+  },
+  "meilisearch": {
+    "host": "localhost",
+    "port": 7700,
+    "use_ssl": false,
+    "timeout": 5
+  },
+  "pwa": {
+    "theme_color": "#ffffff",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "start_url": "/"
+  }
+}

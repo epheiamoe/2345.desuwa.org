@@ -43,8 +43,25 @@ Thumbs.db
 # 项目特定
 # 2345-lgbt-repo/  # 克隆的仓库，独立管理，不要提交
 domains.txt        # 包含所有链接
-*.json             # 爬取数据
 httpcache/         # 爬虫缓存
+
+# 数据文件（不纳入 git）
+*.tmp
+temp/
+temp_docs.json
+backup_meilisearch*.json
+*.log
+
+# 环境变量（不纳入 git）
+.env
+
+# 数据库
+db.sqlite
+db.sqlite-journal
+*.db
+
+# 配置文件（示例纳入 git，实际不纳入）
+# config.json 纳入 git（共享配置）
 
 # API 配置
 api/.env
