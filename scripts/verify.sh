@@ -44,20 +44,20 @@ ENABLE_API="false"
 
 check_pass() {
     echo -e "  ${GREEN}✅${NC} $1"
-    ((TOTAL_CHECKS++))
-    ((PASSED_CHECKS++))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+    PASSED_CHECKS=$((PASSED_CHECKS + 1))
 }
 
 check_fail() {
     echo -e "  ${RED}❌${NC} $1"
-    ((TOTAL_CHECKS++))
-    ((FAILED_CHECKS++))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+    FAILED_CHECKS=$((FAILED_CHECKS + 1))
 }
 
 check_warn() {
     echo -e "  ${YELLOW}⚠️${NC}  $1"
-    ((TOTAL_CHECKS++))
-    ((WARN_CHECKS++))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+    WARN_CHECKS=$((WARN_CHECKS + 1))
 }
 
 print_section() {

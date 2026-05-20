@@ -688,6 +688,7 @@ run_crawler_and_direct_links() {
     log_step "导入数据到 Meilisearch..."
 
     # 检查是否需要运行爬虫
+    ENABLE_CRAWLER="${ENABLE_CRAWLER:-true}"
     if [ "$ENABLE_CRAWLER" != "false" ]; then
         log_info "正在运行爬虫抓取网站数据..."
         log_info "这可能需要 10-30 分钟，具体取决于网络速度"
@@ -704,7 +705,10 @@ run_crawler_and_direct_links() {
         fi
 
         # 加载环境变量
-        export $(grep -v '^#' "$PROJECT_ROOT/.env" | xargs)
+        set -a && source "$PROJECT_ROOT/.env" && set +a
+
+        # 确保日志目录存在
+        mkdir -p "$PROJECT_ROOT/logs"
 
         # 后台运行爬虫
         if $python_cmd -m scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 > "$PROJECT_ROOT/logs/crawler.log" 2>&1; then
@@ -718,6 +722,7 @@ run_crawler_and_direct_links() {
 
         # 添加直接链接（Steam游戏、社交媒体等）
         log_info "正在添加直接链接..."
+        mkdir -p "$PROJECT_ROOT/logs"
         if $python_cmd add_direct_links.py > "$PROJECT_ROOT/logs/direct_links.log" 2>&1; then
             log_success "直接链接添加完成"
         else
@@ -903,7 +908,7 @@ After=network.target
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=$api_dir
+WorkingDirectory=$PROJECT_ROOT
 Environment=PATH=$python_path
 EnvironmentFile=$PROJECT_ROOT/.env
 ExecStart=$python_path $api_dir/wsgi.py

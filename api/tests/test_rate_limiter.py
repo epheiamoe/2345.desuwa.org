@@ -7,6 +7,69 @@ import pytest
 from api.rate_limiter import RateLimiter
 
 
+class MockCursor:
+    """Mock cursor for simulating SQLite cursor operations."""
+
+    def __init__(self, records, key):
+        self.records = records
+        self.key = key
+        self._result = None
+
+    def fetchone(self):
+        return self._result
+
+
+class MockConnection:
+    """Mock connection for simulating SQLite connection within a transaction."""
+
+    def __init__(self, records):
+        self.records = records
+
+    def execute(self, sql, params=()):
+        sql_upper = sql.strip().upper()
+        if "SELECT" in sql_upper:
+            key = params[0]
+            record = self.records.get(key)
+            cursor = MockCursor(self.records, key)
+            if record:
+                # Simulate sqlite3.Row behavior
+                class Row:
+                    def __init__(self, data):
+                        self._data = data
+
+                    def __getitem__(self, key):
+                        return self._data.get(key)
+
+                    def keys(self):
+                        return self._data.keys()
+
+                cursor._result = Row(record)
+            return cursor
+        elif "INSERT" in sql_upper:
+            key = params[0]
+            self.records[key] = {
+                "key": key,
+                "minute_count": params[1],
+                "day_count": params[2],
+                "month_count": params[3],
+                "minute_reset": params[4],
+                "day_reset": params[5],
+                "month_reset": params[6],
+            }
+            return MockCursor(self.records, key)
+        elif "UPDATE" in sql_upper:
+            key = params[-1]
+            if key in self.records:
+                self.records[key]["minute_count"] = params[0]
+                self.records[key]["day_count"] = params[1]
+                self.records[key]["month_count"] = params[2]
+                self.records[key]["minute_reset"] = params[3]
+                self.records[key]["day_reset"] = params[4]
+                self.records[key]["month_reset"] = params[5]
+            return MockCursor(self.records, key)
+        return MockCursor(self.records, "")
+
+
 class MockDatabase:
     """Mock database for testing rate limiter."""
 
@@ -18,6 +81,16 @@ class MockDatabase:
 
     def update_rate_limit(self, key, counters):
         self.records[key] = counters
+
+    def transaction(self):
+        """Provide a transaction context manager for atomic operations."""
+        import contextlib
+
+        return contextlib.contextmanager(self._transaction)()
+
+    def _transaction(self):
+        conn = MockConnection(self.records)
+        yield conn
 
 
 class TestRateLimiterInit:

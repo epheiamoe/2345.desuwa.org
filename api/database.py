@@ -158,6 +158,21 @@ class Database:
             if conn:
                 conn.close()
 
+    @contextmanager
+    def transaction(self):
+        """获取数据库事务上下文管理器
+
+        允许在单一事务中执行多个操作，避免并发竞态条件。
+
+        Yields:
+            sqlite3.Connection: 数据库连接对象（已在事务中）
+
+        Raises:
+            DatabaseError: 当连接失败时
+        """
+        with self._get_connection() as conn:
+            yield conn
+
     def _init_db(self) -> None:
         """初始化数据库表结构
 
@@ -252,6 +267,7 @@ class Database:
         """更新 API Key 信息
 
         只允许更新白名单中的字段，防止意外修改敏感数据。
+        使用显式字段映射替代 f-string，避免 SQL 注入风险。
 
         Args:
             key: 要更新的 API Key
@@ -263,17 +279,18 @@ class Database:
         Raises:
             DatabaseError: 当数据库操作失败时
         """
-        allowed_fields = {
-            "github_id",
-            "github_login",
-            "email",
-            "avatar_url",
-            "is_admin",
-            "is_banned",
-            "credits",
-            "credits_used",
+        # 显式字段映射：字段名 -> SQL 表达式
+        field_mapping = {
+            "github_id": "github_id = ?",
+            "github_login": "github_login = ?",
+            "email": "email = ?",
+            "avatar_url": "avatar_url = ?",
+            "is_admin": "is_admin = ?",
+            "is_banned": "is_banned = ?",
+            "credits": "credits = ?",
+            "credits_used": "credits_used = ?",
         }
-        updates = {k: v for k, v in data.items() if k in allowed_fields}
+        updates = {k: v for k, v in data.items() if k in field_mapping}
 
         if not updates:
             logger.warning("No valid fields to update for API key")
@@ -281,7 +298,7 @@ class Database:
 
         try:
             with self._get_connection() as conn:
-                set_clause = ", ".join(f"{k} = ?" for k in updates)
+                set_clause = ", ".join(field_mapping[k] for k in updates)
                 values = list(updates.values()) + [key]
 
                 cursor = conn.execute(
@@ -293,6 +310,33 @@ class Database:
                 return cursor.rowcount > 0
         except sqlite3.Error as exc:
             raise DatabaseError(f"Failed to update API key: {exc}") from exc
+
+    def increment_credits_used(self, key: str) -> bool:
+        """原子递增 API Key 的已用配额
+
+        使用 UPDATE ... SET credits_used = credits_used + 1 避免竞态条件。
+
+        Args:
+            key: 要更新的 API Key
+
+        Returns:
+            是否成功更新（如果 key 不存在返回 False）
+
+        Raises:
+            DatabaseError: 当数据库操作失败时
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.execute(
+                    """UPDATE api_keys
+                        SET credits_used = credits_used + 1,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE key = ?""",
+                    (key,),
+                )
+                return cursor.rowcount > 0
+        except sqlite3.Error as exc:
+            raise DatabaseError(f"Failed to increment credits used: {exc}") from exc
 
     def delete_api_key(self, key: str) -> bool:
         """删除 API Key

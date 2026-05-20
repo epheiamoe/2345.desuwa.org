@@ -73,3 +73,5 @@ api/db.json
 temp_docs.json
 backup_meilisearch*.json
 图标.jpg
+
+.wiki/

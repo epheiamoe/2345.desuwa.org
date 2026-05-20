@@ -4,10 +4,10 @@
 用法: python add_direct_links.py
 """
 
+import hashlib
+import json
 import os
 import sys
-import json
-import hashlib
 
 # Meilisearch 配置
 MEILISEARCH_HOST = os.environ.get("MEILISEARCH_HOST", "localhost")
@@ -24,10 +24,11 @@ except ImportError:
 
 def get_doc_id(url):
     """生成文档 ID"""
-    return int(hashlib.md5(url.encode()).hexdigest()[:8], 16)
+    return int(hashlib.sha256(url.encode()).hexdigest()[:16], 16)
 
 
 def main():
+    """主函数：将 direct_urls 中的链接直接添加到 Meilisearch 索引。"""
     # 查找 domains.json
     script_dir = os.path.dirname(os.path.abspath(__file__))
     domains_json = os.path.join(script_dir, "domains.json")

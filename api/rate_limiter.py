@@ -111,6 +111,9 @@ class RateLimiter:
         检查指定 key 的当前请求计数是否超出限制，
         并在允许的情况下增加计数器。
 
+        整个读取-检查-写入流程在单一数据库事务中完成，
+        避免并发请求导致的竞态条件（TOCTOU）。
+
         Args:
             key: API Key 或客户端标识符
 
@@ -125,75 +128,112 @@ class RateLimiter:
         now = int(time.time())
 
         try:
-            record = self.db.get_rate_limit(key)
+            with self.db.transaction() as conn:
+                # 在事务内原子读取记录，防止并发读取到过期数据
+                cursor = conn.execute("SELECT * FROM rate_limits WHERE key = ?", (key,))
+                row = cursor.fetchone()
+
+                if row is None:
+                    # 首次请求，初始化计数器
+                    counters = {
+                        "minute_count": 1,
+                        "day_count": 1,
+                        "month_count": 1,
+                        "minute_reset": (
+                            self._get_window_start("minute")
+                            + self.WINDOW_SECONDS["minute"]
+                        ),
+                        "day_reset": (
+                            self._get_window_start("day") + self.WINDOW_SECONDS["day"]
+                        ),
+                        "month_reset": (
+                            self._get_window_start("month")
+                            + self.WINDOW_SECONDS["month"]
+                        ),
+                    }
+                    conn.execute(
+                        """
+                        INSERT INTO rate_limits
+                        (key, minute_count, day_count, month_count,
+                         minute_reset, day_reset, month_reset)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            key,
+                            counters["minute_count"],
+                            counters["day_count"],
+                            counters["month_count"],
+                            counters["minute_reset"],
+                            counters["day_reset"],
+                            counters["month_reset"],
+                        ),
+                    )
+                    return True, self._build_info(counters, remaining=True)
+
+                # 复制记录为可变的字典
+                counters = dict(row)
+
+                # 检查并重置过期的时间窗口
+                if now >= counters["minute_reset"]:
+                    counters["minute_count"] = 0
+                    counters["minute_reset"] = (
+                        self._get_window_start("minute") + self.WINDOW_SECONDS["minute"]
+                    )
+
+                if now >= counters["day_reset"]:
+                    counters["day_count"] = 0
+                    counters["day_reset"] = (
+                        self._get_window_start("day") + self.WINDOW_SECONDS["day"]
+                    )
+
+                if now >= counters["month_reset"]:
+                    counters["month_count"] = 0
+                    counters["month_reset"] = (
+                        self._get_window_start("month") + self.WINDOW_SECONDS["month"]
+                    )
+
+                # 检查是否超出限制
+                if counters["minute_count"] >= self.limits["per_minute"]:
+                    return False, self._build_info(counters, remaining=False)
+
+                if counters["day_count"] >= self.limits["per_day"]:
+                    return False, self._build_info(counters, remaining=False)
+
+                if counters["month_count"] >= self.limits["per_month"]:
+                    return False, self._build_info(counters, remaining=False)
+
+                # 增加计数器
+                counters["minute_count"] += 1
+                counters["day_count"] += 1
+                counters["month_count"] += 1
+
+                # 在事务内原子更新记录
+                conn.execute(
+                    """
+                    UPDATE rate_limits SET
+                        minute_count = ?,
+                        day_count = ?,
+                        month_count = ?,
+                        minute_reset = ?,
+                        day_reset = ?,
+                        month_reset = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE key = ?
+                    """,
+                    (
+                        counters["minute_count"],
+                        counters["day_count"],
+                        counters["month_count"],
+                        counters["minute_reset"],
+                        counters["day_reset"],
+                        counters["month_reset"],
+                        key,
+                    ),
+                )
+
+                return True, self._build_info(counters, remaining=True)
         except DatabaseError as exc:
             raise RateLimitError(f"Failed to check rate limit: {exc}") from exc
-
-        if record is None:
-            # 首次请求，初始化计数器
-            counters = {
-                "minute_count": 1,
-                "day_count": 1,
-                "month_count": 1,
-                "minute_reset": (
-                    self._get_window_start("minute") + self.WINDOW_SECONDS["minute"]
-                ),
-                "day_reset": (
-                    self._get_window_start("day") + self.WINDOW_SECONDS["day"]
-                ),
-                "month_reset": (
-                    self._get_window_start("month") + self.WINDOW_SECONDS["month"]
-                ),
-            }
-            try:
-                self.db.update_rate_limit(key, counters)
-            except DatabaseError as exc:
-                raise RateLimitError(f"Failed to initialize rate limit: {exc}") from exc
-            return True, self._build_info(counters, remaining=True)
-
-        # 复制记录为可变的字典
-        counters = dict(record)
-
-        # 检查并重置过期的时间窗口
-        if now >= counters["minute_reset"]:
-            counters["minute_count"] = 0
-            counters["minute_reset"] = (
-                self._get_window_start("minute") + self.WINDOW_SECONDS["minute"]
-            )
-
-        if now >= counters["day_reset"]:
-            counters["day_count"] = 0
-            counters["day_reset"] = (
-                self._get_window_start("day") + self.WINDOW_SECONDS["day"]
-            )
-
-        if now >= counters["month_reset"]:
-            counters["month_count"] = 0
-            counters["month_reset"] = (
-                self._get_window_start("month") + self.WINDOW_SECONDS["month"]
-            )
-
-        # 检查是否超出限制
-        if counters["minute_count"] >= self.limits["per_minute"]:
-            return False, self._build_info(counters, remaining=False)
-
-        if counters["day_count"] >= self.limits["per_day"]:
-            return False, self._build_info(counters, remaining=False)
-
-        if counters["month_count"] >= self.limits["per_month"]:
-            return False, self._build_info(counters, remaining=False)
-
-        # 增加计数器
-        counters["minute_count"] += 1
-        counters["day_count"] += 1
-        counters["month_count"] += 1
-
-        try:
-            self.db.update_rate_limit(key, counters)
-        except DatabaseError as exc:
-            raise RateLimitError(f"Failed to update rate limit: {exc}") from exc
-
-        return True, self._build_info(counters, remaining=True)
 
     def _build_info(self, counters: dict[str, Any], remaining: bool) -> dict[str, Any]:
         """构建速率限制响应信息

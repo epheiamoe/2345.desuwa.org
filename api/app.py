@@ -74,7 +74,7 @@ SITE_URL = config.env_var("SITE_URL", "https://2345.desuwa.org")
 CORS(
     app,
     resources={
-        r"/api/*": {
+        r"^/api/.*": {
             "origins": [SITE_URL],
             "methods": ["GET", "POST"],
             "allow_headers": ["Authorization", "Content-Type"],
@@ -295,6 +295,7 @@ def auth_callback() -> Any:
             "code": code,
         },
         headers={"Accept": "application/json"},
+        timeout=10,
     )
 
     if token_response.status_code != 200:
@@ -308,6 +309,7 @@ def auth_callback() -> Any:
     user_response = requests.get(
         "https://api.github.com/user",
         headers={"Authorization": f"token {access_token}"},
+        timeout=10,
     )
 
     if user_response.status_code != 200:
@@ -556,36 +558,30 @@ def search() -> Any:
     total = len(hits)
     hits = hits[offset : offset + limit]
 
-    # 获取用户剩余配额并更新
+    # 原子递增已用配额
+    with contextlib.suppress(DatabaseError):
+        db.increment_credits_used(request.api_key)
+
+    # 获取用户配额信息用于响应
     try:
         key_info = db.get_api_key(request.api_key)
         if key_info:
             credits = key_info.get("credits", 0)
             credits_used = key_info.get("credits_used", 0)
-            new_credits_used = credits_used + 1
-
-            db.update_api_key(
-                request.api_key,
-                {
-                    "credits_used": new_credits_used,
-                },
-            )
         else:
             credits = 0
             credits_used = 0
-            new_credits_used = 0
     except DatabaseError:
         credits = 0
         credits_used = 0
-        new_credits_used = 0
 
     return jsonify(
         {
             "results": hits,
             "total": total,
             "query": query,
-            "credits_used": new_credits_used,
-            "credits_remaining": max(0, credits - new_credits_used),
+            "credits_used": credits_used,
+            "credits_remaining": max(0, credits - credits_used),
             "limit": limit,
             "offset": offset,
         }
