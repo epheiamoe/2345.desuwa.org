@@ -681,6 +681,69 @@ start_meilisearch() {
 }
 
 # =============================================================================
+# 运行爬虫和添加直接链接
+# =============================================================================
+
+run_crawler_and_direct_links() {
+    log_step "导入数据到 Meilisearch..."
+
+    # 检查是否需要运行爬虫
+    if [ "$ENABLE_CRAWLER" != "false" ]; then
+        log_info "正在运行爬虫抓取网站数据..."
+        log_info "这可能需要 10-30 分钟，具体取决于网络速度"
+        
+        cd "$PROJECT_ROOT/transspider"
+        
+        # 使用虚拟环境中的 Python
+        if [ -f "$PROJECT_ROOT/api/venv/bin/python" ]; then
+            local python_cmd="$PROJECT_ROOT/api/venv/bin/python"
+        elif [ -f "$PROJECT_ROOT/venv/bin/python" ]; then
+            local python_cmd="$PROJECT_ROOT/venv/bin/python"
+        else
+            local python_cmd="python3"
+        fi
+
+        # 加载环境变量
+        export $(grep -v '^#' "$PROJECT_ROOT/.env" | xargs)
+
+        # 后台运行爬虫
+        if $python_cmd -m scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 > "$PROJECT_ROOT/logs/crawler.log" 2>&1; then
+            log_success "爬虫运行完成"
+        else
+            log_warn "爬虫运行可能遇到问题，请检查日志: $PROJECT_ROOT/logs/crawler.log"
+            log_info "您可以稍后手动运行: cd transspider && scrapy crawl trans"
+        fi
+
+        cd "$PROJECT_ROOT"
+
+        # 添加直接链接（Steam游戏、社交媒体等）
+        log_info "正在添加直接链接..."
+        if $python_cmd add_direct_links.py > "$PROJECT_ROOT/logs/direct_links.log" 2>&1; then
+            log_success "直接链接添加完成"
+        else
+            log_warn "直接链接添加可能遇到问题，请检查日志"
+            log_info "您可以稍后手动运行: python add_direct_links.py"
+        fi
+    else
+        log_info "跳过爬虫（ENABLE_CRAWLER=false）"
+        log_info "您可以稍后手动运行:"
+        log_info "  1. cd transspider && scrapy crawl trans"
+        log_info "  2. python add_direct_links.py"
+    fi
+
+    # 显示当前索引状态
+    log_info "检查索引状态..."
+    local api_key
+    api_key=$(grep "^MEILISEARCH_API_KEY=" "$PROJECT_ROOT/.env" | cut -d= -f2)
+    local doc_count
+    doc_count=$(curl -s "http://localhost:7700/indexes/trans_resources/stats" \
+        -H "Authorization: Bearer $api_key" 2>/dev/null | \
+        python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('numberOfDocuments', 0))" 2>/dev/null || echo "0")
+    
+    log_info "当前索引文档数: $doc_count"
+}
+
+# =============================================================================
 # 生成 Nginx 配置提示
 # =============================================================================
 
@@ -924,11 +987,22 @@ show_summary() {
     fi
     echo ""
 
+    echo -e "${BOLD}数据导入状态:${NC}"
+    if [ "$ENABLE_CRAWLER" != "false" ]; then
+        echo "  ✓ 爬虫已自动运行（抓取网站数据）"
+        echo "  ✓ 直接链接已自动添加（Steam游戏、社交媒体等）"
+        echo "  日志: $PROJECT_ROOT/logs/crawler.log"
+        echo "  日志: $PROJECT_ROOT/logs/direct_links.log"
+    else
+        echo "  ⚠ 爬虫已跳过（ENABLE_CRAWLER=false）"
+        echo "  手动运行: cd $PROJECT_ROOT/transspider && scrapy crawl trans"
+        echo "  手动运行: cd $PROJECT_ROOT && python add_direct_links.py"
+    fi
+    echo ""
+
     echo -e "${BOLD}下一步操作:${NC}"
     echo "  1. 配置 Nginx（参考上方输出的配置）"
     echo "  2. 配置 SSL/TLS（推荐使用 Certbot: certbot --nginx）"
-    echo "  3. 运行爬虫导入数据:"
-    echo "     cd $PROJECT_ROOT/transspider && scrapy crawl trans"
     echo ""
 
     if [ "$MODE" = "full" ] && [ -n "$GITHUB_CLIENT_ID" ]; then
@@ -996,6 +1070,9 @@ main() {
             setup_docker_mode
             ;;
     esac
+
+    # 运行爬虫和添加直接链接
+    run_crawler_and_direct_links
 
     # 配置 Nginx
     setup_nginx
