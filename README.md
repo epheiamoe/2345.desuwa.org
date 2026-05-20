@@ -395,22 +395,6 @@ python app.py
 bash ../scripts/deploy.sh
 ```
 
-### 已知限制
-
-**v1.3 新组件待集成**：
-
-以下新组件已创建但尚未在 `api/app.py` 中启用：
-
-- `database.py` - SQLite 数据库层
-- `rate_limiter.py` - 滑动窗口速率限制器
-- `validators.py` - 输入验证器
-- `config.py` - 统一配置管理
-
-当前 `app.py` 仍使用旧代码（内存速率限制、JSON 数据库）。
-如需启用新组件，需手动修改 `app.py` 导入并使用这些模块。
-
-迁移指南详见：[docs/migration-v1.1.md](docs/migration-v1.1.md)
-
 ### GitHub OAuth 配置
 
 1. 访问 [GitHub Developer Settings](https://github.com/settings/developers)

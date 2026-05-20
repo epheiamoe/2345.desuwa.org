@@ -49,8 +49,10 @@ httpcache/         # 爬虫缓存
 *.tmp
 temp/
 temp_docs.json
-backup_meilisearch*.json
 *.log
+
+# Archive 文件夹（本地备份）
+archive/
 
 # 环境变量（不纳入 git）
 .env
@@ -60,19 +62,12 @@ db.sqlite
 db.sqlite-journal
 *.db
 
-# 配置文件（示例纳入 git，实际不纳入）
-# config.json 纳入 git（共享配置）
-
 # API 配置
 api/.env
 api/db.json
 
 # Docker
 .docker/
-
-# 临时文件
-*.tmp
-temp/
 
 # 搜索测试数据
 temp_docs.json
