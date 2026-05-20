@@ -1,0 +1,18 @@
+# === 爬虫定时任务示例 ===
+# 使用说明：
+# 1. 复制此内容到服务器的 crontab：crontab -e
+# 2. 将 {{PROJECT_DIR}} 替换为实际路径
+# 3. 确保 .env 文件中的密钥配置正确
+
+# 环境变量（如果不在 .env 中）
+# MEILI_MASTER_KEY=your_master_key
+# MEILISEARCH_API_KEY=your_admin_key
+
+# 每周日凌晨3点运行爬虫
+0 3 * * 0 cd {{PROJECT_DIR}}/transspider && {{PROJECT_DIR}}/venv/bin/scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 >> /var/log/trans_spider.log 2>&1
+
+# 添加直接链接（Steam游戏、社交媒体等）
+5 3 * * 0 cd {{PROJECT_DIR}} && {{PROJECT_DIR}}/venv/bin/python add_direct_links.py >> /var/log/trans_spider.log 2>&1
+
+# 可选：健康检查（每5分钟）
+# */5 * * * * {{PROJECT_DIR}}/scripts/health_check.sh >> /var/log/health-check.log 2>&1
