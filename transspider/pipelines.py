@@ -68,9 +68,11 @@ def normalize_license(value: str) -> Optional[Dict[str, str]]:
         if pattern in value_lower or value_lower == pattern:
             return {
                 "type": license_type,
-                "url": value_stripped
-                if value_stripped.startswith("http")
-                else f"https://creativecommons.org/licenses/{license_type.lower().replace('cc-', '')}/4.0/",
+                "url": (
+                    value_stripped
+                    if value_stripped.startswith("http")
+                    else f"https://creativecommons.org/licenses/{license_type.lower().replace('cc-', '')}/4.0/"
+                ),
                 "name": f"Creative Commons {license_type.replace('CC-', '').replace('-', ' ')} 4.0",
             }
 
@@ -149,9 +151,7 @@ def extract_license(html_text: Optional[str]) -> Optional[Dict[str, str]]:
             continue
 
     # 4. 页面文本中的 "Licensed under..." 模式
-    text_match = re.search(
-        r'licensed under ([^<\n]+)', html_text, re.IGNORECASE
-    )
+    text_match = re.search(r"licensed under ([^<\n]+)", html_text, re.IGNORECASE)
     if text_match:
         result = normalize_license(text_match.group(1).strip())
         if result:
@@ -325,9 +325,7 @@ class MeilisearchPipeline:
         normalized = normalize_url(url)
         return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
 
-    def _resolve_id_conflict(
-        self, doc_id: str, url: str, spider: Spider
-    ) -> str:
+    def _resolve_id_conflict(self, doc_id: str, url: str, spider: Spider) -> str:
         """
         检测并解决文档 ID 冲突。
 

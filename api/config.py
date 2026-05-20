@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class ConfigError(Exception):
     """配置错误基类"""
+
     pass
 
 
@@ -41,19 +42,17 @@ class Config:
     """
 
     # 必需的环境变量
-    REQUIRED_ENV_VARS = ['FLASK_SECRET']
+    REQUIRED_ENV_VARS = ["FLASK_SECRET"]
 
     # 建议的环境变量（不阻塞启动，但会警告）
     RECOMMENDED_ENV_VARS = [
-        'MEILISEARCH_API_KEY',
-        'MEILISEARCH_HOST',
-        'MEILISEARCH_PORT',
+        "MEILISEARCH_API_KEY",
+        "MEILISEARCH_HOST",
+        "MEILISEARCH_PORT",
     ]
 
     def __init__(
-        self,
-        env_file: Optional[str] = None,
-        config_path: Optional[str] = None
+        self, env_file: Optional[str] = None, config_path: Optional[str] = None
     ) -> None:
         """初始化配置加载器
 
@@ -93,7 +92,7 @@ class Config:
             return {k: v for k, v in os.environ.items()}
 
         if env_file is None:
-            env_file = Path(__file__).parent.parent / '.env'
+            env_file = Path(__file__).parent.parent / ".env"
         else:
             env_file = Path(env_file)
 
@@ -105,9 +104,7 @@ class Config:
                 f"Permission denied reading env file: {env_file}"
             ) from exc
         except OSError as exc:
-            raise ConfigError(
-                f"Cannot read env file: {env_file} - {exc}"
-            ) from exc
+            raise ConfigError(f"Cannot read env file: {env_file} - {exc}") from exc
 
         return {k: v for k, v in os.environ.items()}
 
@@ -124,7 +121,7 @@ class Config:
             ConfigError: 当配置文件不存在或格式无效时
         """
         if config_path is None:
-            config_path = Path(__file__).parent.parent / 'config.json'
+            config_path = Path(__file__).parent.parent / "config.json"
         else:
             config_path = Path(config_path)
 
@@ -135,7 +132,7 @@ class Config:
             )
 
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 content = f.read()
         except PermissionError as exc:
             raise ConfigError(
@@ -154,9 +151,7 @@ class Config:
             ) from exc
 
         if not isinstance(data, dict):
-            raise ConfigError(
-                "config.json must contain a JSON object (dictionary)"
-            )
+            raise ConfigError("config.json must contain a JSON object (dictionary)")
 
         return data
 
@@ -169,10 +164,7 @@ class Config:
         Raises:
             ConfigError: 当必需变量缺失时
         """
-        missing = [
-            var for var in self.REQUIRED_ENV_VARS
-            if not self.env.get(var)
-        ]
+        missing = [var for var in self.REQUIRED_ENV_VARS if not self.env.get(var)]
 
         if missing:
             raise ConfigError(
@@ -181,7 +173,7 @@ class Config:
             )
 
         # 检查 FLASK_SECRET 长度
-        flask_secret = self.env.get('FLASK_SECRET', '')
+        flask_secret = self.env.get("FLASK_SECRET", "")
         if len(flask_secret) < 32:
             raise ConfigError(
                 f"FLASK_SECRET must be at least 32 characters, "
@@ -190,13 +182,12 @@ class Config:
 
         # 检查建议变量
         missing_recommended = [
-            var for var in self.RECOMMENDED_ENV_VARS
-            if not self.env.get(var)
+            var for var in self.RECOMMENDED_ENV_VARS if not self.env.get(var)
         ]
         if missing_recommended:
             logger.warning(
                 "Missing recommended environment variables: %s",
-                ', '.join(missing_recommended)
+                ", ".join(missing_recommended),
             )
 
     def get(self, key_path: str, default: Any = None) -> Any:
@@ -220,7 +211,7 @@ class Config:
             >>> config.get('nonexistent.key', 'fallback')
             'fallback'
         """
-        keys = key_path.split('.')
+        keys = key_path.split(".")
         value: Any = self.shared
 
         for key in keys:
@@ -257,10 +248,10 @@ class Config:
             >>> config.meilisearch_url
             'http://localhost:7700'
         """
-        host = self.env.get('MEILISEARCH_HOST', 'localhost')
-        port = self.env.get('MEILISEARCH_PORT', '7700')
-        use_ssl = self.shared.get('meilisearch', {}).get('use_ssl', False)
-        protocol = 'https' if use_ssl else 'http'
+        host = self.env.get("MEILISEARCH_HOST", "localhost")
+        port = self.env.get("MEILISEARCH_PORT", "7700")
+        use_ssl = self.shared.get("meilisearch", {}).get("use_ssl", False)
+        protocol = "https" if use_ssl else "http"
         return f"{protocol}://{host}:{port}"
 
     @property
@@ -276,21 +267,21 @@ class Config:
             >>> config.rate_limits
             {'per_minute': 10, 'per_day': 1000, 'per_month': 2000}
         """
-        default_limits = {'per_minute': 10, 'per_day': 1000, 'per_month': 2000}
-        shared_limits = self.shared.get('rate_limit', default_limits)
+        default_limits = {"per_minute": 10, "per_day": 1000, "per_month": 2000}
+        shared_limits = self.shared.get("rate_limit", default_limits)
 
         return {
-            'per_minute': int(
-                self.env.get('RATE_LIMIT_PER_MINUTE')
-                or shared_limits.get('per_minute', default_limits['per_minute'])
+            "per_minute": int(
+                self.env.get("RATE_LIMIT_PER_MINUTE")
+                or shared_limits.get("per_minute", default_limits["per_minute"])
             ),
-            'per_day': int(
-                self.env.get('RATE_LIMIT_PER_DAY')
-                or shared_limits.get('per_day', default_limits['per_day'])
+            "per_day": int(
+                self.env.get("RATE_LIMIT_PER_DAY")
+                or shared_limits.get("per_day", default_limits["per_day"])
             ),
-            'per_month': int(
-                self.env.get('RATE_LIMIT_PER_MONTH')
-                or shared_limits.get('per_month', default_limits['per_month'])
+            "per_month": int(
+                self.env.get("RATE_LIMIT_PER_MONTH")
+                or shared_limits.get("per_month", default_limits["per_month"])
             ),
         }
 
@@ -304,7 +295,7 @@ class Config:
         Raises:
             ConfigError: 当 API Key 未设置时
         """
-        key = self.env.get('MEILISEARCH_API_KEY', '')
+        key = self.env.get("MEILISEARCH_API_KEY", "")
         if not key:
             raise ConfigError("MEILISEARCH_API_KEY is not set")
         return key
@@ -316,7 +307,7 @@ class Config:
         Returns:
             Flask Secret Key（至少 32 字符）
         """
-        return self.env.get('FLASK_SECRET', '')
+        return self.env.get("FLASK_SECRET", "")
 
 
 # 全局单例实例

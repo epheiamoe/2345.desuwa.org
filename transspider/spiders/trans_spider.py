@@ -38,6 +38,7 @@ def load_domain_tags() -> Tuple[dict, set]:
     domains_json = os.path.join(PROJECT_ROOT, "domains.json")
     if os.path.exists(domains_json):
         import json
+
         with open(domains_json, encoding="utf-8") as f:
             data = json.load(f)
             for item in data.get("domains", []):
@@ -91,9 +92,7 @@ class TransSpider(scrapy.Spider):
         url = response.url
 
         if self.page_count >= self.max_pages:
-            self.logger.info(
-                "已达到最大页面数 %s，停止爬取", self.max_pages
-            )
+            self.logger.info("已达到最大页面数 %s，停止爬取", self.max_pages)
             return
 
         self.page_count += 1
@@ -154,9 +153,7 @@ class TransSpider(scrapy.Spider):
             self.logger.warning("正文提取失败 %s: %s", response.url, exc)
             return ""
 
-    def _build_item(
-        self, response: Response, content: str
-    ) -> TransResourceItem | None:
+    def _build_item(self, response: Response, content: str) -> TransResourceItem | None:
         """
         根据响应与正文构建 ``TransResourceItem``。
 
@@ -199,10 +196,7 @@ class TransSpider(scrapy.Spider):
             若域名不在 ``no_follow_domains`` 且未达页面上限则返回 ``True``。
         """
         domain = self._extract_domain(response.url)
-        return (
-            domain not in self.no_follow_domains
-            and self.page_count < self.max_pages
-        )
+        return domain not in self.no_follow_domains and self.page_count < self.max_pages
 
     def _extract_link_requests(self, response: Response) -> Generator:
         """
@@ -248,6 +242,7 @@ class TransSpider(scrapy.Spider):
             小写域名（不含 ``www.`` 前缀）。
         """
         from urllib.parse import urlparse
+
         domain = urlparse(url).netloc.lower()
         if domain.startswith("www."):
             domain = domain[4:]

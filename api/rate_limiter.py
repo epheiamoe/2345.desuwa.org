@@ -24,6 +24,7 @@ __author__ = "TransSearch Team"
 
 class RateLimitError(Exception):
     """速率限制错误"""
+
     pass
 
 
@@ -41,22 +42,22 @@ class RateLimiter:
 
     # 默认速率限制配置
     DEFAULT_LIMITS = {
-        'per_minute': 10,
-        'per_day': 1000,
-        'per_month': 2000,
+        "per_minute": 10,
+        "per_day": 1000,
+        "per_month": 2000,
     }
 
     # 时间窗口秒数
     WINDOW_SECONDS = {
-        'minute': 60,
-        'day': 86400,      # 60 * 60 * 24
-        'month': 2592000,  # 60 * 60 * 24 * 30
+        "minute": 60,
+        "day": 86400,  # 60 * 60 * 24
+        "month": 2592000,  # 60 * 60 * 24 * 30
     }
 
     def __init__(
         self,
         limits: Optional[Dict[str, int]] = None,
-        database: Optional[Database] = None
+        database: Optional[Database] = None,
     ) -> None:
         """初始化速率限制器
 
@@ -127,35 +128,28 @@ class RateLimiter:
         try:
             record = self.db.get_rate_limit(key)
         except DatabaseError as exc:
-            raise RateLimitError(
-                f"Failed to check rate limit: {exc}"
-            ) from exc
+            raise RateLimitError(f"Failed to check rate limit: {exc}") from exc
 
         if record is None:
             # 首次请求，初始化计数器
             counters = {
-                'minute_count': 1,
-                'day_count': 1,
-                'month_count': 1,
-                'minute_reset': (
-                    self._get_window_start('minute')
-                    + self.WINDOW_SECONDS['minute']
+                "minute_count": 1,
+                "day_count": 1,
+                "month_count": 1,
+                "minute_reset": (
+                    self._get_window_start("minute") + self.WINDOW_SECONDS["minute"]
                 ),
-                'day_reset': (
-                    self._get_window_start('day')
-                    + self.WINDOW_SECONDS['day']
+                "day_reset": (
+                    self._get_window_start("day") + self.WINDOW_SECONDS["day"]
                 ),
-                'month_reset': (
-                    self._get_window_start('month')
-                    + self.WINDOW_SECONDS['month']
+                "month_reset": (
+                    self._get_window_start("month") + self.WINDOW_SECONDS["month"]
                 ),
             }
             try:
                 self.db.update_rate_limit(key, counters)
             except DatabaseError as exc:
-                raise RateLimitError(
-                    f"Failed to initialize rate limit: {exc}"
-                ) from exc
+                raise RateLimitError(f"Failed to initialize rate limit: {exc}") from exc
             return True, self._build_info(counters, remaining=True)
 
         # 复制记录为可变的字典
@@ -163,59 +157,50 @@ class RateLimiter:
         reset_needed = False
 
         # 检查并重置过期的时间窗口
-        if now >= counters['minute_reset']:
-            counters['minute_count'] = 0
-            counters['minute_reset'] = (
-                self._get_window_start('minute')
-                + self.WINDOW_SECONDS['minute']
+        if now >= counters["minute_reset"]:
+            counters["minute_count"] = 0
+            counters["minute_reset"] = (
+                self._get_window_start("minute") + self.WINDOW_SECONDS["minute"]
             )
             reset_needed = True
 
-        if now >= counters['day_reset']:
-            counters['day_count'] = 0
-            counters['day_reset'] = (
-                self._get_window_start('day')
-                + self.WINDOW_SECONDS['day']
+        if now >= counters["day_reset"]:
+            counters["day_count"] = 0
+            counters["day_reset"] = (
+                self._get_window_start("day") + self.WINDOW_SECONDS["day"]
             )
             reset_needed = True
 
-        if now >= counters['month_reset']:
-            counters['month_count'] = 0
-            counters['month_reset'] = (
-                self._get_window_start('month')
-                + self.WINDOW_SECONDS['month']
+        if now >= counters["month_reset"]:
+            counters["month_count"] = 0
+            counters["month_reset"] = (
+                self._get_window_start("month") + self.WINDOW_SECONDS["month"]
             )
             reset_needed = True
 
         # 检查是否超出限制
-        if counters['minute_count'] >= self.limits['per_minute']:
+        if counters["minute_count"] >= self.limits["per_minute"]:
             return False, self._build_info(counters, remaining=False)
 
-        if counters['day_count'] >= self.limits['per_day']:
+        if counters["day_count"] >= self.limits["per_day"]:
             return False, self._build_info(counters, remaining=False)
 
-        if counters['month_count'] >= self.limits['per_month']:
+        if counters["month_count"] >= self.limits["per_month"]:
             return False, self._build_info(counters, remaining=False)
 
         # 增加计数器
-        counters['minute_count'] += 1
-        counters['day_count'] += 1
-        counters['month_count'] += 1
+        counters["minute_count"] += 1
+        counters["day_count"] += 1
+        counters["month_count"] += 1
 
         try:
             self.db.update_rate_limit(key, counters)
         except DatabaseError as exc:
-            raise RateLimitError(
-                f"Failed to update rate limit: {exc}"
-            ) from exc
+            raise RateLimitError(f"Failed to update rate limit: {exc}") from exc
 
         return True, self._build_info(counters, remaining=True)
 
-    def _build_info(
-        self,
-        counters: Dict[str, Any],
-        remaining: bool
-    ) -> Dict[str, Any]:
+    def _build_info(self, counters: Dict[str, Any], remaining: bool) -> Dict[str, Any]:
         """构建速率限制响应信息
 
         生成包含配额和重置时间的字典，用于 API 响应头。
@@ -230,25 +215,20 @@ class RateLimiter:
         now = int(time.time())
 
         return {
-            'limit_minute': self.limits['per_minute'],
-            'limit_day': self.limits['per_day'],
-            'limit_month': self.limits['per_month'],
-            'remaining_minute': max(
-                0,
-                self.limits['per_minute'] - counters['minute_count']
+            "limit_minute": self.limits["per_minute"],
+            "limit_day": self.limits["per_day"],
+            "limit_month": self.limits["per_month"],
+            "remaining_minute": max(
+                0, self.limits["per_minute"] - counters["minute_count"]
             ),
-            'remaining_day': max(
-                0,
-                self.limits['per_day'] - counters['day_count']
+            "remaining_day": max(0, self.limits["per_day"] - counters["day_count"]),
+            "remaining_month": max(
+                0, self.limits["per_month"] - counters["month_count"]
             ),
-            'remaining_month': max(
-                0,
-                self.limits['per_month'] - counters['month_count']
-            ),
-            'reset_minute': max(0, counters['minute_reset'] - now),
-            'reset_day': max(0, counters['day_reset'] - now),
-            'reset_month': max(0, counters['month_reset'] - now),
-            'allowed': remaining,
+            "reset_minute": max(0, counters["minute_reset"] - now),
+            "reset_day": max(0, counters["day_reset"] - now),
+            "reset_month": max(0, counters["month_reset"] - now),
+            "allowed": remaining,
         }
 
     def get_status(self, key: str) -> Dict[str, Any]:
@@ -266,54 +246,50 @@ class RateLimiter:
         try:
             record = self.db.get_rate_limit(key)
         except DatabaseError as exc:
-            raise RateLimitError(
-                f"Failed to get rate limit status: {exc}"
-            ) from exc
+            raise RateLimitError(f"Failed to get rate limit status: {exc}") from exc
 
         if record is None:
             # 从未使用过，返回满配额
             return {
-                'limit_minute': self.limits['per_minute'],
-                'limit_day': self.limits['per_day'],
-                'limit_month': self.limits['per_month'],
-                'remaining_minute': self.limits['per_minute'],
-                'remaining_day': self.limits['per_day'],
-                'remaining_month': self.limits['per_month'],
-                'reset_minute': self.WINDOW_SECONDS['minute'],
-                'reset_day': self.WINDOW_SECONDS['day'],
-                'reset_month': self.WINDOW_SECONDS['month'],
-                'allowed': True,
+                "limit_minute": self.limits["per_minute"],
+                "limit_day": self.limits["per_day"],
+                "limit_month": self.limits["per_month"],
+                "remaining_minute": self.limits["per_minute"],
+                "remaining_day": self.limits["per_day"],
+                "remaining_month": self.limits["per_month"],
+                "reset_minute": self.WINDOW_SECONDS["minute"],
+                "reset_day": self.WINDOW_SECONDS["day"],
+                "reset_month": self.WINDOW_SECONDS["month"],
+                "allowed": True,
             }
 
         counters = dict(record)
         now = int(time.time())
 
         # 计算当前剩余配额（考虑即将重置的窗口）
-        minute_remaining = self.limits['per_minute']
-        day_remaining = self.limits['per_day']
-        month_remaining = self.limits['per_month']
+        minute_remaining = self.limits["per_minute"]
+        day_remaining = self.limits["per_day"]
+        month_remaining = self.limits["per_month"]
 
-        if now < counters['minute_reset']:
-            minute_remaining -= counters['minute_count']
-        if now < counters['day_reset']:
-            day_remaining -= counters['day_count']
-        if now < counters['month_reset']:
-            month_remaining -= counters['month_count']
+        if now < counters["minute_reset"]:
+            minute_remaining -= counters["minute_count"]
+        if now < counters["day_reset"]:
+            day_remaining -= counters["day_count"]
+        if now < counters["month_reset"]:
+            month_remaining -= counters["month_count"]
 
         return {
-            'limit_minute': self.limits['per_minute'],
-            'limit_day': self.limits['per_day'],
-            'limit_month': self.limits['per_month'],
-            'remaining_minute': max(0, minute_remaining),
-            'remaining_day': max(0, day_remaining),
-            'remaining_month': max(0, month_remaining),
-            'reset_minute': max(0, counters['minute_reset'] - now),
-            'reset_day': max(0, counters['day_reset'] - now),
-            'reset_month': max(0, counters['month_reset'] - now),
-            'allowed': (
-                minute_remaining > 0
-                and day_remaining > 0
-                and month_remaining > 0
+            "limit_minute": self.limits["per_minute"],
+            "limit_day": self.limits["per_day"],
+            "limit_month": self.limits["per_month"],
+            "remaining_minute": max(0, minute_remaining),
+            "remaining_day": max(0, day_remaining),
+            "remaining_month": max(0, month_remaining),
+            "reset_minute": max(0, counters["minute_reset"] - now),
+            "reset_day": max(0, counters["day_reset"] - now),
+            "reset_month": max(0, counters["month_reset"] - now),
+            "allowed": (
+                minute_remaining > 0 and day_remaining > 0 and month_remaining > 0
             ),
         }
 
@@ -330,20 +306,18 @@ class RateLimiter:
         """
         now = int(time.time())
         counters = {
-            'minute_count': 0,
-            'day_count': 0,
-            'month_count': 0,
-            'minute_reset': now + self.WINDOW_SECONDS['minute'],
-            'day_reset': now + self.WINDOW_SECONDS['day'],
-            'month_reset': now + self.WINDOW_SECONDS['month'],
+            "minute_count": 0,
+            "day_count": 0,
+            "month_count": 0,
+            "minute_reset": now + self.WINDOW_SECONDS["minute"],
+            "day_reset": now + self.WINDOW_SECONDS["day"],
+            "month_reset": now + self.WINDOW_SECONDS["month"],
         }
 
         try:
             self.db.update_rate_limit(key, counters)
         except DatabaseError as exc:
-            raise RateLimitError(
-                f"Failed to reset rate limit: {exc}"
-            ) from exc
+            raise RateLimitError(f"Failed to reset rate limit: {exc}") from exc
 
 
 # 全局单例实例

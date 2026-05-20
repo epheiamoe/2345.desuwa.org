@@ -27,10 +27,10 @@ __author__ = "TransSearch Team"
 logger = logging.getLogger(__name__)
 
 # 数据库默认路径
-DEFAULT_DB_PATH = Path(__file__).parent / 'db.sqlite'
+DEFAULT_DB_PATH = Path(__file__).parent / "db.sqlite"
 
 # 数据库 Schema
-SCHEMA_SQL = '''
+SCHEMA_SQL = """
 -- API Keys 表：存储用户认证信息
 CREATE TABLE IF NOT EXISTS api_keys (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,11 +72,12 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);
 CREATE INDEX IF NOT EXISTS idx_rate_limits_key ON rate_limits(key);
 CREATE INDEX IF NOT EXISTS idx_api_usage_key ON api_usage(api_key);
 CREATE INDEX IF NOT EXISTS idx_api_usage_timestamp ON api_usage(timestamp);
-'''
+"""
 
 
 class DatabaseError(Exception):
     """数据库操作错误"""
+
     pass
 
 
@@ -134,22 +135,22 @@ class Database:
             conn.row_factory = sqlite3.Row
 
             # 启用 WAL 模式以支持并发读写
-            conn.execute('PRAGMA journal_mode=WAL')
+            conn.execute("PRAGMA journal_mode=WAL")
             # 启用外键约束
-            conn.execute('PRAGMA foreign_keys=ON')
+            conn.execute("PRAGMA foreign_keys=ON")
             # 开启显式事务
-            conn.execute('BEGIN IMMEDIATE')
+            conn.execute("BEGIN IMMEDIATE")
 
             yield conn
 
             # 成功时提交（仅在事务仍活跃时）
             # executescript 会隐式提交，此时无需重复 COMMIT
             if conn.in_transaction:
-                conn.execute('COMMIT')
+                conn.execute("COMMIT")
         except sqlite3.Error as exc:
             if conn:
                 try:
-                    conn.execute('ROLLBACK')
+                    conn.execute("ROLLBACK")
                 except sqlite3.Error as rollback_exc:
                     raise DatabaseError(
                         f"Database rollback failed: {rollback_exc}"
@@ -184,16 +185,11 @@ class Database:
         """
         try:
             with self._get_connection() as conn:
-                cursor = conn.execute(
-                    'SELECT * FROM api_keys WHERE key = ?',
-                    (key,)
-                )
+                cursor = conn.execute("SELECT * FROM api_keys WHERE key = ?", (key,))
                 row = cursor.fetchone()
                 return dict(row) if row else None
         except sqlite3.Error as exc:
-            raise DatabaseError(
-                f"Failed to get API key: {exc}"
-            ) from exc
+            raise DatabaseError(f"Failed to get API key: {exc}") from exc
 
     def get_user_by_github_id(self, github_id: str) -> Optional[Dict[str, Any]]:
         """通过 GitHub ID 获取用户信息
@@ -210,21 +206,14 @@ class Database:
         try:
             with self._get_connection() as conn:
                 cursor = conn.execute(
-                    'SELECT * FROM api_keys WHERE github_id = ?',
-                    (github_id,)
+                    "SELECT * FROM api_keys WHERE github_id = ?", (github_id,)
                 )
                 row = cursor.fetchone()
                 return dict(row) if row else None
         except sqlite3.Error as exc:
-            raise DatabaseError(
-                f"Failed to get user by github id: {exc}"
-            ) from exc
+            raise DatabaseError(f"Failed to get user by github id: {exc}") from exc
 
-    def create_api_key(
-        self,
-        key: str,
-        user_data: Dict[str, Any]
-    ) -> None:
+    def create_api_key(self, key: str, user_data: Dict[str, Any]) -> None:
         """创建新的 API Key
 
         Args:
@@ -237,34 +226,29 @@ class Database:
         """
         try:
             with self._get_connection() as conn:
-                conn.execute('''
+                conn.execute(
+                    """
                     INSERT INTO api_keys
                     (key, github_id, github_login, email, avatar_url, is_admin, credits, credits_used)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    key,
-                    user_data.get('github_id'),
-                    user_data.get('github_login'),
-                    user_data.get('email'),
-                    user_data.get('avatar_url'),
-                    1 if user_data.get('is_admin') else 0,
-                    user_data.get('credits', 2000),
-                    user_data.get('credits_used', 0)
-                ))
+                """,
+                    (
+                        key,
+                        user_data.get("github_id"),
+                        user_data.get("github_login"),
+                        user_data.get("email"),
+                        user_data.get("avatar_url"),
+                        1 if user_data.get("is_admin") else 0,
+                        user_data.get("credits", 2000),
+                        user_data.get("credits_used", 0),
+                    ),
+                )
         except sqlite3.IntegrityError as exc:
-            raise DatabaseError(
-                f"API key already exists: {exc}"
-            ) from exc
+            raise DatabaseError(f"API key already exists: {exc}") from exc
         except sqlite3.Error as exc:
-            raise DatabaseError(
-                f"Failed to create API key: {exc}"
-            ) from exc
+            raise DatabaseError(f"Failed to create API key: {exc}") from exc
 
-    def update_api_key(
-        self,
-        key: str,
-        data: Dict[str, Any]
-    ) -> bool:
+    def update_api_key(self, key: str, data: Dict[str, Any]) -> bool:
         """更新 API Key 信息
 
         只允许更新白名单中的字段，防止意外修改敏感数据。
@@ -280,14 +264,16 @@ class Database:
             DatabaseError: 当数据库操作失败时
         """
         allowed_fields = {
-            'github_id', 'github_login', 'email',
-            'avatar_url', 'is_admin', 'is_banned',
-            'credits', 'credits_used'
+            "github_id",
+            "github_login",
+            "email",
+            "avatar_url",
+            "is_admin",
+            "is_banned",
+            "credits",
+            "credits_used",
         }
-        updates = {
-            k: v for k, v in data.items()
-            if k in allowed_fields
-        }
+        updates = {k: v for k, v in data.items() if k in allowed_fields}
 
         if not updates:
             logger.warning("No valid fields to update for API key")
@@ -295,20 +281,18 @@ class Database:
 
         try:
             with self._get_connection() as conn:
-                set_clause = ', '.join(f"{k} = ?" for k in updates.keys())
+                set_clause = ", ".join(f"{k} = ?" for k in updates.keys())
                 values = list(updates.values()) + [key]
 
                 cursor = conn.execute(
-                    f'''UPDATE api_keys
+                    f"""UPDATE api_keys
                         SET {set_clause}, updated_at = CURRENT_TIMESTAMP
-                        WHERE key = ?''',
-                    values
+                        WHERE key = ?""",
+                    values,
                 )
                 return cursor.rowcount > 0
         except sqlite3.Error as exc:
-            raise DatabaseError(
-                f"Failed to update API key: {exc}"
-            ) from exc
+            raise DatabaseError(f"Failed to update API key: {exc}") from exc
 
     def delete_api_key(self, key: str) -> bool:
         """删除 API Key
@@ -324,15 +308,10 @@ class Database:
         """
         try:
             with self._get_connection() as conn:
-                cursor = conn.execute(
-                    'DELETE FROM api_keys WHERE key = ?',
-                    (key,)
-                )
+                cursor = conn.execute("DELETE FROM api_keys WHERE key = ?", (key,))
                 return cursor.rowcount > 0
         except sqlite3.Error as exc:
-            raise DatabaseError(
-                f"Failed to delete API key: {exc}"
-            ) from exc
+            raise DatabaseError(f"Failed to delete API key: {exc}") from exc
 
     def list_api_keys(self) -> List[Dict[str, Any]]:
         """列出所有 API Keys
@@ -345,14 +324,10 @@ class Database:
         """
         try:
             with self._get_connection() as conn:
-                cursor = conn.execute(
-                    'SELECT * FROM api_keys ORDER BY created_at DESC'
-                )
+                cursor = conn.execute("SELECT * FROM api_keys ORDER BY created_at DESC")
                 return [dict(row) for row in cursor.fetchall()]
         except sqlite3.Error as exc:
-            raise DatabaseError(
-                f"Failed to list API keys: {exc}"
-            ) from exc
+            raise DatabaseError(f"Failed to list API keys: {exc}") from exc
 
     # === 速率限制 ===
 
@@ -370,22 +345,13 @@ class Database:
         """
         try:
             with self._get_connection() as conn:
-                cursor = conn.execute(
-                    'SELECT * FROM rate_limits WHERE key = ?',
-                    (key,)
-                )
+                cursor = conn.execute("SELECT * FROM rate_limits WHERE key = ?", (key,))
                 row = cursor.fetchone()
                 return dict(row) if row else None
         except sqlite3.Error as exc:
-            raise DatabaseError(
-                f"Failed to get rate limit: {exc}"
-            ) from exc
+            raise DatabaseError(f"Failed to get rate limit: {exc}") from exc
 
-    def update_rate_limit(
-        self,
-        key: str,
-        counters: Dict[str, Any]
-    ) -> None:
+    def update_rate_limit(self, key: str, counters: Dict[str, Any]) -> None:
         """更新速率限制计数器
 
         使用 INSERT OR REPLACE 语义，不存在则插入，存在则更新。
@@ -400,7 +366,8 @@ class Database:
         """
         try:
             with self._get_connection() as conn:
-                conn.execute('''
+                conn.execute(
+                    """
                     INSERT INTO rate_limits
                     (key, minute_count, day_count, month_count,
                      minute_reset, day_reset, month_reset)
@@ -413,19 +380,19 @@ class Database:
                         day_reset = excluded.day_reset,
                         month_reset = excluded.month_reset,
                         updated_at = CURRENT_TIMESTAMP
-                ''', (
-                    key,
-                    counters.get('minute_count', 0),
-                    counters.get('day_count', 0),
-                    counters.get('month_count', 0),
-                    counters.get('minute_reset'),
-                    counters.get('day_reset'),
-                    counters.get('month_reset')
-                ))
+                """,
+                    (
+                        key,
+                        counters.get("minute_count", 0),
+                        counters.get("day_count", 0),
+                        counters.get("month_count", 0),
+                        counters.get("minute_reset"),
+                        counters.get("day_reset"),
+                        counters.get("month_reset"),
+                    ),
+                )
         except sqlite3.Error as exc:
-            raise DatabaseError(
-                f"Failed to update rate limit: {exc}"
-            ) from exc
+            raise DatabaseError(f"Failed to update rate limit: {exc}") from exc
 
     # === 审计日志 ===
 
@@ -442,8 +409,8 @@ class Database:
         try:
             with self._get_connection() as conn:
                 conn.execute(
-                    'INSERT INTO api_usage (api_key, endpoint) VALUES (?, ?)',
-                    (api_key, endpoint)
+                    "INSERT INTO api_usage (api_key, endpoint) VALUES (?, ?)",
+                    (api_key, endpoint),
                 )
         except sqlite3.Error as exc:
             # 审计日志失败不应影响主流程，仅记录警告
@@ -472,58 +439,56 @@ class Database:
             return 0
 
         try:
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError as exc:
-            raise DatabaseError(
-                f"Invalid JSON in migration source: {exc}"
-            ) from exc
+            raise DatabaseError(f"Invalid JSON in migration source: {exc}") from exc
         except OSError as exc:
-            raise DatabaseError(
-                f"Cannot read migration source: {exc}"
-            ) from exc
+            raise DatabaseError(f"Cannot read migration source: {exc}") from exc
 
         migrated_count = 0
-        users = data.get('users', {})
-        keys = data.get('keys', {})
+        users = data.get("users", {})
+        keys = data.get("keys", {})
 
         try:
             with self._get_connection() as conn:
                 # 迁移用户数据
                 for github_id, user_data in users.items():
-                    api_key = user_data.get('api_key')
+                    api_key = user_data.get("api_key")
                     if not api_key:
                         continue
 
                     try:
-                        conn.execute('''
+                        conn.execute(
+                            """
                             INSERT OR IGNORE INTO api_keys
                             (key, github_id, github_login, email, avatar_url, is_admin, is_banned, credits, credits_used, created_at)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (
-                            api_key,
-                            user_data.get('github_id'),
-                            user_data.get('github_login'),
-                            user_data.get('email'),
-                            user_data.get('avatar_url'),
-                            1 if user_data.get('is_admin') else 0,
-                            1 if user_data.get('banned') else 0,
-                            user_data.get('credits', 2000),
-                            user_data.get('credits_used', 0),
-                            user_data.get('created_at')
-                        ))
+                        """,
+                            (
+                                api_key,
+                                user_data.get("github_id"),
+                                user_data.get("github_login"),
+                                user_data.get("email"),
+                                user_data.get("avatar_url"),
+                                1 if user_data.get("is_admin") else 0,
+                                1 if user_data.get("banned") else 0,
+                                user_data.get("credits", 2000),
+                                user_data.get("credits_used", 0),
+                                user_data.get("created_at"),
+                            ),
+                        )
                         migrated_count += 1
                     except sqlite3.Error:
                         # 单个 key 迁移失败不影响其他
                         logger.warning("Failed to migrate API key: %s", api_key)
         except sqlite3.Error as exc:
-            raise DatabaseError(
-                f"Migration failed: {exc}"
-            ) from exc
+            raise DatabaseError(f"Migration failed: {exc}") from exc
 
         logger.info(
             "Migration completed: %d API keys migrated from %s",
-            migrated_count, json_path
+            migrated_count,
+            json_path,
         )
         return migrated_count
 

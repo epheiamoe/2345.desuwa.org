@@ -85,9 +85,7 @@ CORS(
 
 # 管理员配置（GitHub username）
 ADMIN_USERS = [
-    u.strip()
-    for u in config.env_var("ADMIN_USERS", "").split(",")
-    if u.strip()
+    u.strip() for u in config.env_var("ADMIN_USERS", "").split(",") if u.strip()
 ]
 
 # 数据库迁移：从 db.json 迁移到 SQLite（向后兼容）
@@ -107,9 +105,7 @@ def get_meilisearch_client() -> meilisearch.Client:
         配置好的 Meilisearch 客户端实例
     """
     api_key = MEILISEARCH_API_KEY if MEILISEARCH_API_KEY else None
-    return meilisearch.Client(
-        f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}", api_key
-    )
+    return meilisearch.Client(f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}", api_key)
 
 
 def require_api_key(f):
@@ -245,9 +241,7 @@ def handle_internal_error(error: Any) -> Any:
         message = str(error)
 
     return (
-        jsonify(
-            {"error": {"code": "INTERNAL_ERROR", "message": message}}
-        ),
+        jsonify({"error": {"code": "INTERNAL_ERROR", "message": message}}),
         500,
     )
 
@@ -256,9 +250,7 @@ def handle_internal_error(error: Any) -> Any:
 def handle_validation_error(error: ValidationError) -> Any:
     """处理验证错误"""
     return (
-        jsonify(
-            {"error": {"code": "VALIDATION_ERROR", "message": str(error)}}
-        ),
+        jsonify({"error": {"code": "VALIDATION_ERROR", "message": str(error)}}),
         400,
     )
 

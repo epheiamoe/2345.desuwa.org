@@ -66,12 +66,8 @@ MEILISEARCH_API_KEY: str = os.environ.get("MEILISEARCH_API_KEY", "")
 # 爬虫行为配置
 # ---------------------------------------------------------------------------
 # 是否使用 WARP 代理（默认关闭，仅在 IP 被封时手动开启）
-USE_WARP_PROXY: bool = (
-    os.environ.get("USE_WARP_PROXY", "false").lower() == "true"
-)
-WARP_SOCKS5_PROXY: str = os.environ.get(
-    "WARP_SOCKS5_PROXY", "socks5://127.0.0.1:1080"
-)
+USE_WARP_PROXY: bool = os.environ.get("USE_WARP_PROXY", "false").lower() == "true"
+WARP_SOCKS5_PROXY: str = os.environ.get("WARP_SOCKS5_PROXY", "socks5://127.0.0.1:1080")
 
 # 随机 User-Agent 池
 USER_AGENTS: list[str] = [
@@ -100,6 +96,7 @@ USER_AGENTS: list[str] = [
 # ---------------------------------------------------------------------------
 # 配置加载函数
 # ---------------------------------------------------------------------------
+
 
 def load_domains() -> list[str]:
     """

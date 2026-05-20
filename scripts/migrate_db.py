@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional
 
 class DatabaseMigrationError(Exception):
     """数据库迁移错误"""
+
     pass
 
 
@@ -45,7 +46,9 @@ class DatabaseMigrator:
         """
         self.source_path = Path(source_path)
         self.target_path = Path(target_path)
-        self.backup_path = Path(f"{target_path}.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        self.backup_path = Path(
+            f"{target_path}.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
         self.migrated = False
 
     def _load_json(self) -> Dict[str, Any]:
@@ -280,7 +283,9 @@ class DatabaseMigrator:
 
             # 如果当前数据库存在，先备份当前状态
             if self.target_path.exists():
-                rollback_backup = Path(f"{self.target_path}.rollback.{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+                rollback_backup = Path(
+                    f"{self.target_path}.rollback.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                )
                 shutil.copy2(self.target_path, rollback_backup)
                 print(f"当前数据库已备份到: {rollback_backup}")
 

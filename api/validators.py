@@ -31,6 +31,7 @@ class ValidationError(Exception):
 
     当输入参数不符合预期时抛出，携带用户友好的错误信息。
     """
+
     pass
 
 
@@ -45,14 +46,14 @@ class InputValidator:
 
     # 域名格式验证（支持多级域名）
     DOMAIN_PATTERN = re.compile(
-        r'^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+$'
+        r"^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)+$"
     )
 
     # API Key 格式验证（字母、数字、下划线、连字符，20-128 字符）
-    API_KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_-]{20,128}$')
+    API_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{20,128}$")
 
     # 危险字符（可能导致注入或格式问题）
-    DANGEROUS_CHARS = ['\x00', '\n', '\r']
+    DANGEROUS_CHARS = ["\x00", "\n", "\r"]
 
     # 查询长度限制
     MAX_QUERY_LENGTH = 200
@@ -65,15 +66,41 @@ class InputValidator:
     # 支持的语言代码（从 config.json 动态加载）
     # 如果配置加载失败，使用默认列表作为后备
     DEFAULT_SUPPORTED_LANGUAGES = {
-        'zh-cn', 'zh-hant', 'en', 'ja', 'es', 'nl',
-        'ko', 'fr', 'de', 'pl', 'el', 'hu', 'ru'
+        "zh-cn",
+        "zh-hant",
+        "en",
+        "ja",
+        "es",
+        "nl",
+        "ko",
+        "fr",
+        "de",
+        "pl",
+        "el",
+        "hu",
+        "ru",
     }
 
     # 默认标签列表（配置加载失败时的后备）
     DEFAULT_TAGS = {
-        'MtF', 'FtM', '知识库', 'HRT', '手术', '法律',
-        '心理', '社群', '工具', '游戏', 'Steam', '影视',
-        '小说', '指南', '学术', '社区', '性', '报告'
+        "MtF",
+        "FtM",
+        "知识库",
+        "HRT",
+        "手术",
+        "法律",
+        "心理",
+        "社群",
+        "工具",
+        "游戏",
+        "Steam",
+        "影视",
+        "小说",
+        "指南",
+        "学术",
+        "社区",
+        "性",
+        "报告",
     }
 
     @classmethod
@@ -87,7 +114,7 @@ class InputValidator:
         """
         if config is not None:
             try:
-                tags = config.get('tags.available', [])
+                tags = config.get("tags.available", [])
                 if tags:
                     return set(tags)
             except Exception as exc:
@@ -105,7 +132,7 @@ class InputValidator:
         """
         if config is not None:
             try:
-                langs = config.get('languages.supported', [])
+                langs = config.get("languages.supported", [])
                 if langs:
                     return set(langs)
             except Exception as exc:
@@ -145,9 +172,7 @@ class InputValidator:
         # 检查危险字符（防御性编程）
         for char in cls.DANGEROUS_CHARS:
             if char in q:
-                raise ValidationError(
-                    "Invalid characters in query"
-                )
+                raise ValidationError("Invalid characters in query")
 
         return q
 
@@ -178,9 +203,7 @@ class InputValidator:
             raise ValidationError("Limit must be at least 1")
 
         if limit > cls.ABSOLUTE_MAX_LIMIT:
-            raise ValidationError(
-                f"Limit cannot exceed {cls.ABSOLUTE_MAX_LIMIT}"
-            )
+            raise ValidationError(f"Limit cannot exceed {cls.ABSOLUTE_MAX_LIMIT}")
 
         return limit
 
@@ -239,8 +262,7 @@ class InputValidator:
 
         if tag not in valid_tags:
             raise ValidationError(
-                f"Invalid tag: '{tag}'. "
-                f"Valid tags: {', '.join(sorted(valid_tags))}"
+                f"Invalid tag: '{tag}'. " f"Valid tags: {', '.join(sorted(valid_tags))}"
             )
 
         return tag
@@ -336,10 +358,9 @@ class InputValidator:
         supported_langs = cls._get_supported_languages()
 
         if lang not in supported_langs:
-            supported = ', '.join(sorted(supported_langs))
+            supported = ", ".join(sorted(supported_langs))
             raise ValidationError(
-                f"Unsupported language: '{lang}'. "
-                f"Supported languages: {supported}"
+                f"Unsupported language: '{lang}'. " f"Supported languages: {supported}"
             )
 
         return lang
@@ -350,7 +371,7 @@ def validate_search_params(
     limit: Any = 10,
     offset: Any = 0,
     tag: Optional[Any] = None,
-    site: Optional[Any] = None
+    site: Optional[Any] = None,
 ) -> Tuple[str, int, int, Optional[str], Optional[str]]:
     """验证并返回所有搜索参数
 
@@ -382,11 +403,11 @@ def validate_search_params(
     validated_offset = InputValidator.validate_offset(offset)
 
     validated_tag = None
-    if tag is not None and tag != '':
+    if tag is not None and tag != "":
         validated_tag = InputValidator.validate_tag(tag)
 
     validated_site = None
-    if site is not None and site != '':
+    if site is not None and site != "":
         validated_site = InputValidator.validate_domain(site)
 
     return validated_q, validated_limit, validated_offset, validated_tag, validated_site
