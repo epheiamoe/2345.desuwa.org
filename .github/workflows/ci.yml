@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  python-checks:
+    name: Python Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black ruff bandit pytest
+          pip install -r api/requirements.txt
+
+      - name: Check Black formatting
+        run: black --check api/ transspider/ scripts/
+
+      - name: Run Ruff linter
+        run: ruff check api/ transspider/ scripts/
+
+      - name: Run Bandit security scan
+        run: bandit -r api/ transspider/ scripts/ -f json -o bandit-report.json || true
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report-${{ matrix.python-version }}
+          path: bandit-report.json
+
+      - name: Run pytest
+        run: pytest api/tests/ -v --tb=short
+
+  php-checks:
+    name: PHP Syntax Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+
+      - name: Check PHP syntax
+        run: |
+          find frontend/ -name "*.php" -exec php -l {} \;
+
+  config-validation:
+    name: Config Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate config.json
+        run: |
+          python -c "import json; json.load(open('config.json'))"
+          echo "config.json is valid JSON"
+
+      - name: Validate domains.json
+        run: |
+          python -c "import json; json.load(open('domains.json'))"
+          echo "domains.json is valid JSON"
+
+      - name: Validate manifest.json
+        run: |
+          python -c "import json; json.load(open('frontend/manifest.json'))"
+          echo "frontend/manifest.json is valid JSON"

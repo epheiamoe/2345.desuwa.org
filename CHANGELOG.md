@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-20
+
+### Security
+- 修复 XSS 漏洞（高亮输出转义：format_highlighted + e() 双保险）
+- 修复 API 速率限制竞争条件（SQLite 替代内存存储）
+- 修复 MD5 ID 冲突（SHA-256 替代，带冲突检测与自动解决）
+- 修复 Session Cookie 安全配置（待 app.py 集成新组件后生效）
+- 添加输入验证器（validators.py：查询、域名、标签、语言校验）
+
+### Changed
+- 配置外置（.env + config.json，统一 Config 类管理）
+- 前端视图与逻辑分离（index.php → template.php + functions.php + search.php）
+- CSS 变量系统（style.css 支持暗黑模式）
+- 爬虫 URL 规范化（normalize_url 工具函数）
+
+### Added
+- SQLite 数据库层（database.py：WAL 模式，支持审计日志）
+- 速率限制器（rate_limiter.py：滑动窗口，三级时间粒度）
+- 输入验证器（validators.py：防御性参数校验）
+- 部署脚本（scripts/deploy.sh）
+- 健康检查（scripts/health_check.sh）
+- 数据库迁移脚本（scripts/migrate_db.py，支持回滚）
+- CI/CD 流程（GitHub Actions 配置）
+
 ## [1.2.0] - 2026-03-19
 
 ### Added

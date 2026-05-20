@@ -92,7 +92,7 @@ cp env.example .env
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
 
-# 必填：Flask session 密钥（随机字符串）
+# 必填：Flask session 密钥（随机字符串，至少32字符）
 FLASK_SECRET=your_random_secret_key
 
 # 必填：站点 URL（用于 OAuth 回调）
@@ -105,7 +105,14 @@ ADMIN_USERS=your_github_username
 MEILISEARCH_HOST=localhost
 MEILISEARCH_PORT=7700
 MEILISEARCH_INDEX=trans_resources
-MEILISEARCH_API_KEY=  # 生产环境建议设置密钥
+MEILISEARCH_API_KEY=  # 生产环境必须设置
+MEILI_MASTER_KEY=      # 用于生成其他 Key
+
+# 可选：速率限制（覆盖 config.json 默认值）
+RATE_LIMIT_PER_MINUTE=10
+RATE_LIMIT_PER_DAY=1000
+RATE_LIMIT_PER_MONTH=2000
+
 API_PORT=5000
 ```
 
@@ -113,7 +120,12 @@ API_PORT=5000
 
 ```bash
 pip install -r requirements.txt
-python app.py &
+
+# 如果使用新组件（推荐）
+python app.py
+
+# 或使用部署脚本
+bash ../scripts/deploy.sh
 ```
 
 #### 4. 配置 Nginx
@@ -159,8 +171,15 @@ python add_direct_links.py
 
 ```bash
 # 每周日凌晨3点更新索引
-0 3 * * 0 cd /var/www/2345.desuwa.org/transspider && scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 >> /var/log/trans-spider.log 2>&1
-0 3 * * 1 cd /var/www/2345.desuwa.org && python add_direct_links.py >> /var/log/trans-spider.log 2>&1
+0 3 * * 0 cd /var/www/2345.desuwa.org/transspider && MEILI_MASTER_KEY=xxx MEILISEARCH_API_KEY=yyy scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 >> /var/log/trans-spider.log 2>&1
+0 3 * * 1 cd /var/www/2345.desuwa.org && MEILISEARCH_API_KEY=yyy python add_direct_links.py >> /var/log/trans-spider.log 2>&1
+```
+
+#### 7. 启用健康检查（可选）
+
+```bash
+# 添加健康检查到定时任务（每5分钟）
+*/5 * * * * /var/www/2345.desuwa.org/scripts/health_check.sh >> /var/log/health-check.log 2>&1
 ```
 
 ---
@@ -168,9 +187,34 @@ python add_direct_links.py
 ### 生产环境安全建议
 
 1. **Meilisearch 密钥**：设置 `MEILI_MASTER_KEY` 并在配置中启用
-2. **API 速率限制**：当前基于内存，生产环境建议使用 Redis
-3. **数据库**：当前使用 JSON 文件，高并发环境建议使用数据库
-4. **HTTPS**：务必使用 HTTPS 部署
+2. **API 速率限制**：v1.3+ 已迁移到 SQLite 存储（替代内存），支持多 worker 环境
+3. **数据库**：v1.3+ 使用 SQLite（WAL 模式）替代 JSON 文件，修复竞争条件
+4. **Session Cookie**：生产环境建议配置 `SESSION_COOKIE_SECURE=true`（HTTPS 时）
+5. **输入验证**：v1.3+ 新增 validators.py，对所有 API 参数进行校验
+6. **HTTPS**：务必使用 HTTPS 部署
+
+## 架构变更说明（v1.3）
+
+### 新组件
+
+```
+api/
+├── app.py              # 主程序（待集成新组件）
+├── config.py           # 统一配置管理（.env + config.json）
+├── database.py         # SQLite 数据库层（WAL 模式）
+├── rate_limiter.py     # 滑动窗口速率限制器
+├── validators.py       # 输入验证器
+└── env.example         # 环境变量模板
+```
+
+### 配置管理
+
+配置已从硬编码迁移到外部文件：
+
+- **环境变量**：`.env` 文件（敏感信息）
+- **共享配置**：`config.json`（站点设置、标签列表、语言支持）
+
+**不再**需要直接修改代码中的配置值。
 
 ---
 
@@ -181,25 +225,55 @@ python add_direct_links.py
 - `domains.json` - 完整的域名和标签列表（推荐使用）
 - `domains_test.txt` - 测试用域名（少量）
 
-### Meilisearch 配置
+### 配置文件
 
-在 `transspider/config.py` 中（开发环境默认值）：
+#### config.json（项目根目录）
 
-```python
-MEILISEARCH_HOST = "localhost"
-MEILISEARCH_PORT = 7700
-MEILISEARCH_INDEX = "trans_resources"
-MEILISEARCH_API_KEY = ""  # 生产环境设置密钥
+共享配置，包含站点信息、标签列表、语言支持等：
+
+```json
+{
+  "site": {
+    "name": "2345.desuwa.org",
+    "title": "跨性别资源搜索",
+    "url": "https://2345.desuwa.org"
+  },
+  "tags": {
+    "available": ["MtF", "FtM", "HRT", "知识库", "手术", "法律"]
+  },
+  "languages": {
+    "supported": ["zh-cn", "zh-hant", "en", "ja", "es"]
+  },
+  "rate_limit": {
+    "per_minute": 10,
+    "per_day": 1000,
+    "per_month": 2000
+  }
+}
 ```
 
-### PHP 前端配置
+#### .env（api/ 目录）
 
-通过环境变量或直接修改默认值：
+敏感信息和环境相关配置：
 
-```php
-$MEILISEARCH_HOST = getenv('MEILISEARCH_HOST') ?: 'localhost';
-$MEILISEARCH_PORT = getenv('MEILISEARCH_PORT') ?: '7700';
-$MEILISEARCH_INDEX = 'trans_resources';
+```bash
+FLASK_SECRET=your_secret_key
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_secret
+MEILISEARCH_API_KEY=your_api_key
+```
+
+#### Nginx 环境变量传递
+
+PHP 通过 `getenv()` 读取环境变量，需要在 Nginx 中传递：
+
+```nginx
+location ~ \.php$ {
+    fastcgi_pass unix:/tmp/php-cgi-84.sock;
+    fastcgi_param MEILISEARCH_API_KEY your_search_key;
+    fastcgi_param MEILISEARCH_HOST localhost;
+    fastcgi_param MEILISEARCH_PORT 7700;
+}
 ```
 
 ---
@@ -261,18 +335,37 @@ cd api
 # 2. 复制环境配置
 cp env.example .env
 
-# 3. 编辑 .env 文件，配置以下内容：
-# - GITHUB_CLIENT_ID: GitHub OAuth App Client ID
-# - GITHUB_CLIENT_SECRET: GitHub OAuth App Client Secret
-# - FLASK_SECRET: Flask session 密钥
-# - ADMIN_USERS: 管理员 GitHub 用户名（逗号分隔）
+# 3. 编辑 .env 文件，配置所有必需变量
+# 4. 确认 config.json 存在于项目根目录
 
-# 4. 安装依赖
+# 5. 数据库迁移（从 JSON 到 SQLite，如适用）
+python ../scripts/migrate_db.py --source db.json --target db.sqlite
+
+# 6. 安装依赖
 pip install -r requirements.txt
 
-# 5. 启动服务
+# 7. 启动服务
 python app.py
+
+# 或使用部署脚本
+bash ../scripts/deploy.sh
 ```
+
+### 已知限制
+
+**v1.3 新组件待集成**：
+
+以下新组件已创建但尚未在 `api/app.py` 中启用：
+
+- `database.py` - SQLite 数据库层
+- `rate_limiter.py` - 滑动窗口速率限制器
+- `validators.py` - 输入验证器
+- `config.py` - 统一配置管理
+
+当前 `app.py` 仍使用旧代码（内存速率限制、JSON 数据库）。
+如需启用新组件，需手动修改 `app.py` 导入并使用这些模块。
+
+迁移指南详见：[docs/migration-v1.1.md](docs/migration-v1.1.md)
 
 ### GitHub OAuth 配置
 
@@ -299,21 +392,42 @@ curl "https://2345.desuwa.org/api/search?q=HRT" \
 ```
 2345.desuwa.org/
 ├── frontend/              # PHP 前端
-│   ├── index.php         # 搜索页面
-│   ├── style.css         # 样式
-│   └── search.js         # 前端脚本
+│   ├── index.php         # 入口（请求处理）
+│   ├── template.php      # 模板渲染
+│   ├── functions.php     # 安全输出辅助函数
+│   ├── search.php        # 搜索逻辑
+│   ├── config.php        # 配置加载器
+│   ├── language_rules.php # 语言检测规则
+│   ├── style.css         # 样式（含 CSS 变量和暗黑模式）
+│   ├── search.js         # 前端脚本
+│   ├── manifest.json     # PWA 配置
+│   └── sw.js             # Service Worker
 ├── transspider/           # Scrapy 爬虫
 │   ├── spiders/           # 爬虫代码
-│   ├── pipelines.py      # Meilisearch 推送
-│   └── config.py          # 配置
+│   ├── pipelines.py      # Meilisearch 推送（SHA-256 ID）
+│   ├── config.py         # 爬虫配置
+│   └── utils.py          # 工具函数（URL 规范化）
 ├── api/                   # Flask API 服务
-│   ├── app.py             # 主程序
-│   ├── console.html       # API 控制台
-│   └── env.example        # 环境配置示例
+│   ├── app.py            # 主程序
+│   ├── config.py         # 统一配置管理
+│   ├── database.py       # SQLite 数据库层
+│   ├── rate_limiter.py   # 滑动窗口速率限制器
+│   ├── validators.py     # 输入验证器
+│   ├── language_rules.py # 语言检测规则
+│   ├── console.html      # API 控制台
+│   └── env.example       # 环境配置示例
+├── scripts/               # 运维脚本
+│   ├── deploy.sh         # 部署脚本
+│   ├── health_check.sh   # 健康检查
+│   └── migrate_db.py     # 数据库迁移工具
 ├── docs/                  # 文档
+│   ├── API.md            # API 文档
+│   └── migration-v1.1.md # 迁移指南
+├── config.json           # 共享配置（站点、标签、语言）
 ├── domains.json          # 域名和标签列表
 ├── domains_test.txt      # 测试用域名
 ├── docker-compose.yml    # Meilisearch Docker
+├── CHANGELOG.md          # 变更日志
 └── README.md
 ```
 
