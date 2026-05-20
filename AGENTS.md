@@ -1,227 +1,394 @@
-# AGENTS.md - 项目开发指南
+# AGENTS.md - AI 部署与开发指南
 
 ## 项目概述
 
 2345.desuwa.org - 跨性别资源搜索引擎
 
+**当前版本**: v2.0 (Easy Deploy)
+
 ## 技术栈
 
-- **前端**: PHP + HTML/CSS/JS
+- **前端**: PHP 8.1+ + HTML/CSS/JS
 - **搜索后端**: Meilisearch (Docker)
 - **爬虫**: Python + Scrapy + trafilatura
 - **API**: Flask + GitHub OAuth
+- **数据库**: SQLite (WAL 模式)
+- **部署**: Bash 脚本 + Docker Compose
+
+## AI 部署 Skill
+
+本项目提供 **Claude Skill** 用于 AI 辅助部署：
+
+**文件**: `.claude/skills/deploy.md`
+
+**功能**:
+- 自动检测环境（PHP, Docker, Python, Nginx）
+- 选择部署模式（minimal/full/docker）
+- 生成配置文件
+- 启动服务
+- 运行爬虫导入数据
+- 验证部署结果
+
+**使用方式**:
+```bash
+# AI 会自动读取 skill 并执行部署
+# 用户只需说："帮我部署这个搜索引擎"
+```
+
+详见: [.claude/skills/deploy.md](.claude/skills/deploy.md)
 
 ## 目录结构
 
 ```
 2345.desuwa.org/
-├── frontend/           # PHP 前端
-│   ├── index.php      # 主搜索页面
-│   ├── style.css      # 样式（含暗黑模式）
-│   ├── search.js       # 前端脚本（语言检测、主题切换、PWA）
-│   ├── language_rules.php  # 语言检测规则（可自定义）
-│   ├── manifest.json   # PWA 配置
-│   ├── sw.js           # Service Worker
-│   └── icon.svg/png    # 应用图标
-├── transspider/       # Scrapy 爬虫
-│   ├── config.py       # 配置（从 domains.json 加载）
-│   ├── pipelines.py    # 管道（MD5 hash 生成文档 ID）
-│   └── spiders/trans_spider.py  # 爬虫逻辑
-├── api/               # Flask API
-│   ├── app.py
-│   ├── language_rules.py  # Python 语言检测规则
-│   └── env.example
-├── docs/              # 静态文档页面
-├── domains.json       # 域名配置
-├── add_direct_links.py # 添加直接链接脚本
-└── docker-compose.yml # Meilisearch
+├── frontend/              # PHP 前端
+│   ├── index.php         # 入口（请求处理）
+│   ├── template.php      # 模板渲染
+│   ├── functions.php     # 安全输出辅助函数
+│   ├── search.php        # 搜索逻辑
+│   ├── config.php        # 配置加载器（读取 .env + config.json）
+│   ├── manifest.php      # 动态 PWA manifest
+│   ├── language_rules.php # 语言检测规则
+│   ├── style.css         # 样式（含 CSS 变量和暗黑模式）
+│   ├── search.js         # 前端脚本
+│   ├── manifest.json     # PWA 配置（静态备份）
+│   └── sw.js             # Service Worker
+├── transspider/           # Scrapy 爬虫
+│   ├── spiders/           # 爬虫代码
+│   │   └── trans_spider.py
+│   ├── pipelines.py      # Meilisearch 推送
+│   │                     # - SHA-256 ID（替代 MD5）
+│   │                     # - License 版权信息提取
+│   │                     # - 指数退避重试
+│   ├── config.py         # 爬虫配置（从 config.json 加载）
+│   ├── items.py          # Item 定义
+│   └── utils.py          # URL 规范化工具
+├── api/                   # Flask API
+│   ├── app.py            # 主程序
+│   ├── config.py         # 统一配置管理（.env + config.json）
+│   ├── database.py       # SQLite 数据库层（WAL 模式）
+│   ├── rate_limiter.py   # 滑动窗口速率限制器
+│   ├── validators.py     # 输入验证器
+│   ├── auth.py           # 认证逻辑
+│   ├── language_rules.py # Python 语言检测规则
+│   ├── console.html      # API 控制台
+│   ├── wsgi.py           # Gunicorn 入口
+│   ├── Dockerfile        # API 容器化
+│   ├── requirements.txt  # Python 依赖
+│   └── env.example       # 环境变量模板
+├── scripts/               # 部署脚本
+│   ├── install.sh        # 一键部署向导（交互式/自动模式）
+│   ├── rebrand.sh        # 品牌替换（交互式/自动模式）
+│   ├── verify.sh         # 部署验证
+│   ├── deploy.sh         # 传统部署脚本
+│   ├── health_check.sh   # 健康检查
+│   └── migrate_db.py     # 数据库迁移工具
+├── docs/                  # 文档
+│   ├── deploy/           # 部署文档
+│   │   ├── QUICKSTART.md   # 5分钟快速开始
+│   │   ├── MINIMAL.md      # 最小模式详解
+│   │   ├── FULL.md         # 完整模式详解
+│   │   ├── DOCKER.md       # Docker 模式
+│   │   ├── REBRAND.md      # 品牌替换指南
+│   │   └── TROUBLESHOOTING.md # 故障排除
+│   ├── API.md            # API 文档
+│   └── migration-v1.1.md # 迁移指南
+├── config/                # 配置模板
+│   └── examples/
+│       ├── nginx.minimal.conf   # Nginx 最小配置
+│       ├── nginx.full.conf      # Nginx 完整配置
+│       ├── systemd.api.service  # Systemd 服务
+│       └── crontab.crawler      # 定时任务示例
+├── .claude/               # AI 配置
+│   └── skills/
+│       └── deploy.md      # AI 部署 Skill
+├── .deploy/               # 设计文档
+│   ├── design.md          # 架构设计
+│   └── checklist.md       # 实施清单
+├── config.json           # 共享配置（站点、标签、语言）
+├── config.example.json   # 配置模板
+├── .env.example          # 环境变量模板
+├── .env.minimal.example  # 最小模式模板
+├── .env.full.example     # 完整模式模板
+├── domains.json          # 域名和标签列表
+├── domains_test.txt      # 测试用域名
+├── docker-compose.yml    # Meilisearch Docker
+├── docker-compose.full.yml # 完整 Docker Compose
+├── pyproject.toml        # Python 项目配置
+├── CHANGELOG.md          # 变更日志
+├── README.md             # 用户文档
+└── AGENTS.md             # 本文档（AI 指南）
 ```
 
-## 语言检测规则
+## 部署模式
 
-语言检测规则已与代码解耦，自部署者可轻松自定义修改：
+### 1. 最小模式（Minimal）
 
-- **PHP 前端**: `frontend/language_rules.php`
-- **Python API**: `api/language_rules.py`
+**组件**: PHP + Meilisearch
+**时间**: ~5 分钟
+**功能**: 搜索（无需 GitHub OAuth）
 
-### 支持的语言
-
-通过 URL 路径检测：`zh-cn`, `zh-hant`, `en`, `ja`, `es`, `nl`, `ko`, `fr`, `de`, `pl`, `el`, `hu`, `ru` 等
-
-### 无语言路径的域名默认语言
-
-在 `DOMAIN_DEFAULT_LANG` 中配置，例如：
-```php
-$DOMAIN_DEFAULT_LANG = [
-    'mtf.wiki' => 'zh-cn',
-    'genderdysphoria.fyi' => 'en',  // 英文为主
-    'knowsex.net' => 'zh-cn',       // 中文为主
-    // ...
-];
+```bash
+./scripts/install.sh --mode minimal --auto \
+  --domain search.example.com \
+  --title "My Search"
 ```
 
-### URL 模式规则
+### 2. 完整模式（Full）
 
-在 `URL_PATTERN_RULES` 中配置，用于更细粒度的匹配，例如：
-```php
-$URL_PATTERN_RULES = [
-    ['pattern' => '/tweets?/', 'lang' => 'en', 'weight' => 10],  // Twitter 内容默认英文
-    ['pattern' => '/category\/.*[\x{4e00}-\x{9fff}]/u', 'lang' => 'zh-cn', 'weight' => 8],  // URL含中文
-];
+**组件**: PHP + Meilisearch + Flask API + GitHub OAuth
+**时间**: ~15 分钟
+**功能**: 搜索 + API + OAuth
+
+```bash
+./scripts/install.sh --mode full --auto \
+  --domain search.example.com \
+  --title "My Search" \
+  --github-client-id YOUR_ID \
+  --github-secret YOUR_SECRET
 ```
 
-## PWA 应用支持
+### 3. Docker 模式
 
-- `manifest.json`: PWA 配置（名称、图标、主题色）
-- `sw.js`: Service Worker（缓存策略，离线可用）
-- 安装按钮在搜索技巧下拉框中（仅 JS 可用时显示）
+**组件**: 全部容器化
+**时间**: ~10 分钟
 
-## 关键配置
+```bash
+./scripts/install.sh --mode docker --auto \
+  --domain search.example.com
+```
 
-### domains.json 结构
+## 配置文件
 
-- `domains`: 需要爬取的网站列表（只爬取这些域名）
-- `direct_urls`: 直接添加到索引的 URL（不爬取），用于：
-  - Steam 游戏页面（无法爬取）
-  - 社交媒体帖子（Twitter、Reddit 等）
-  - 其他无法通过爬虫获取的页面
+### .env（环境变量）
 
-### 部署命令
+位置：项目根目录
+
+```bash
+# === 部署模式 ===
+DEPLOY_MODE=minimal           # minimal | full | docker
+ENABLE_API=false              # 是否启用 Flask API
+ENABLE_OAUTH=false            # 是否启用 GitHub OAuth
+ENABLE_CRAWLER=true           # 是否启用爬虫
+
+# === Meilisearch ===
+MEILISEARCH_HOST=localhost
+MEILISEARCH_PORT=7700
+MEILISEARCH_API_KEY=          # Search Key
+MEILI_MASTER_KEY=             # Master Key
+
+# === Flask（完整模式） ===
+FLASK_SECRET=                 # >=32字符随机字符串
+
+# === GitHub OAuth（完整模式） ===
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+ADMIN_USERS=                  # 管理员 GitHub 用户名
+
+# === 站点配置 ===
+SITE_URL=https://your-domain.com
+SITE_NAME=YourSiteName
+SITE_TITLE=Your Site Title
+```
+
+### config.json（共享配置）
+
+位置：项目根目录
+
+```json
+{
+  "site": {
+    "name": "{{SITE_NAME}}",
+    "title": "{{SITE_TITLE}}",
+    "url": "{{SITE_URL}}"
+  },
+  "deploy": {
+    "mode": "minimal",
+    "features": {
+      "api": false,
+      "oauth": false,
+      "crawler": true
+    }
+  },
+  "search": {
+    "index_name": "trans_resources",
+    "default_limit": 10,
+    "max_limit": 100
+  },
+  "tags": {
+    "available": ["MtF", "FtM", "知识库", "HRT"]
+  },
+  "languages": {
+    "supported": ["zh-cn", "zh-hant", "en", "ja"]
+  }
+}
+```
+
+## 部署流程
+
+### 自动部署（推荐）
+
+```bash
+# 1. 克隆代码
+git clone https://github.com/epheiamoe/2345.desuwa.org.git
+cd 2345.desuwa.org
+
+# 2. 运行部署向导
+./scripts/install.sh
+
+# 3. 验证部署
+./scripts/verify.sh
+```
+
+### 手动部署（传统方式）
 
 ```bash
 # 1. 启动 Meilisearch
 docker-compose up -d
 
-# 2. 爬取网站
-cd transspider && scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000
+# 2. 配置环境变量
+cp .env.example .env
+nano .env
 
-# 3. 添加直接链接（Steam游戏、社交媒体等）
-cd .. && python add_direct_links.py
+# 3. 配置站点信息
+cp config.example.json config.json
+nano config.json
+
+# 4. 安装 API 依赖
+cd api
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# 5. 启动 API
+python app.py
+
+# 6. 运行爬虫
+cd ../transspider
+source ../api/venv/bin/activate
+scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000
+
+# 7. 添加直接链接
+cd ..
+python add_direct_links.py
 ```
 
-### Cron 任务（每周日3点）
+## 品牌替换
 
 ```bash
-cd /www/wwwroot/2345.desuwa.org/transspider && scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 >> /var/log/trans_spider.log 2>&1
-cd /www/wwwroot/2345.desuwa.org && python3 add_direct_links.py >> /var/log/trans_spider.log 2>&1
+# 交互式
+./scripts/rebrand.sh
+
+# 自动模式
+./scripts/rebrand.sh \
+  --name "MySearch" \
+  --domain "search.example.com" \
+  --title "My Trans Search" \
+  --repo "https://github.com/myname/search"
 ```
 
-## 常见任务
+替换范围：
+- config.json 站点信息
+- .env 域名配置
+- frontend/ 默认回退值
+- docs/ 品牌引用
 
-### 添加新网站到爬取列表
+## 关键变更（v2.0）
 
-在 `domains.json` 的 `domains` 数组中添加：
-```json
-{"domain": "example.com", "name": "示例", "url": "https://example.com/", "tags": ["知识库"]}
-```
+### 新增
+- 一键部署脚本 `install.sh`
+- 品牌替换脚本 `rebrand.sh`
+- 部署验证脚本 `verify.sh`
+- AI 部署 Skill `.claude/skills/deploy.md`
+- License 版权信息提取
+- 三种部署模式（minimal/full/docker）
+- 动态 PWA manifest
 
-### 添加直接链接
+### 修改
+- 配置外置（.env + config.json）
+- SQLite 替代 JSON 文件数据库
+- SHA-256 替代 MD5 文档 ID
+- CSS 变量系统
 
-在 `domains.json` 的 `direct_urls` 数组中添加：
-```json
-{"url": "https://example.com/page", "title": "页面标题", "tags": ["标签"]}
-```
+### 删除
+- 硬编码品牌信息
+- 内存速率限制
+- 手动部署步骤（自动化）
 
-然后运行 `python add_direct_links.py`
+## API Key 管理
 
-### 部署到服务器
+### Meilisearch Keys
 
-### 重要：服务器不是 Git 部署
-
-仓库是后续才开源的，服务器使用 `scp` 上传文件而非 `git clone`：
-```bash
-# 上传安全修复后的文件
-scp docker-compose.yml myvps:/www/wwwroot/2345.desuwa.org/
-scp frontend/index.php myvps:/www/wwwroot/2345.desuwa.org/frontend/
-scp api/app.py myvps:/www/wwwroot/2345.desuwa.org/api/
-scp transspider/config.py myvps:/www/wwwroot/2345.desuwa.org/transspider/
-```
-
-### 安全加固后的部署流程
-
-1. SSH 登录服务器：`ssh myvps`
-2. 备份现有文件
-3. 上传新文件
-4. 重启 Meilisearch（需要 Master Key）
-5. 配置环境变量（API Key）
-6. 重启 Flask API
-7. 更新 Nginx 配置（如需要传递环境变量给 PHP）
-8. 验证
-
-### 环境变量配置
-
-**Meilisearch Master Key**（用于生成其他 Key）：
-```bash
-MEILI_MASTER_KEY=your_master_key_here
-```
-
-**分层 API Key**：
-- **Search Key**：前端和 API 使用（只有 search 权限）
-- **Admin Key**：爬虫使用（有 documents.add 权限）
+**Master Key**: 用于生成其他 Key，仅在部署时使用
+**Search Key**: 前端和 API 使用，只有 search 权限
+**Admin Key**: 爬虫使用，有 documents.add 权限
 
 创建命令：
 ```bash
 # Search Key
-curl -X POST "http://127.0.0.1:7700/keys" \
+curl -X POST "http://localhost:7700/keys" \
   -H "Authorization: Bearer $MEILI_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"description": "Search-only key", "actions": ["search"], "indexes": ["trans_resources"], "expiresAt": null}'
+  -d '{"actions": ["search"], "indexes": ["trans_resources"]}'
 
-# Admin Key（爬虫用）
-curl -X POST "http://127.0.0.1:7700/keys" \
+# Admin Key
+curl -X POST "http://localhost:7700/keys" \
   -H "Authorization: Bearer $MEILI_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"description": "Admin key for crawler", "actions": ["documents.add", "documents.delete", "indexes.*"], "indexes": ["trans_resources"], "expiresAt": null}'
+  -d '{"actions": ["documents.add", "documents.delete", "indexes.*"], "indexes": ["trans_resources"]}'
 ```
 
-### PHP 环境变量传递（Nginx + PHP-FPM）
+### Flask API Keys
 
-PHP 代码中 `getenv()` 读取的是 PHP-FPM 进程的环境变量，不是 Nginx 的。需要在 Nginx 配置中使用 `fastcgi_param` 传递：
-```nginx
-location ~ \.php$ {
-    include fastcgi_params;
-    fastcgi_pass unix:/tmp/php-cgi-84.sock;
-    fastcgi_param MEILISEARCH_API_KEY your_search_key;
-}
+存储在 `api/db.sqlite`（SQLite 数据库）
+
+迁移命令：
+```bash
+python scripts/migrate_db.py --source db.json --target db.sqlite
 ```
 
-### Flask API 重启
+## 验证命令
 
 ```bash
-pkill -f 'python.*api/app.py'
-cd /www/wwwroot/2345.desuwa.org/api
-MEILISEARCH_API_KEY=your_search_key nohup python3 app.py > /var/log/api.log 2>&1 &
+# 验证部署
+./scripts/verify.sh
+
+# 手动验证
+# Meilisearch 健康
+curl http://localhost:7700/health
+
+# API 健康
+curl http://localhost:5000/api/health
+
+# 搜索功能
+curl "http://localhost/?q=HRT"
+
+# 索引统计
+curl -H "Authorization: Bearer $MEILI_MASTER_KEY" \
+  http://localhost:7700/indexes/trans_resources/stats
 ```
 
-### Cron 任务（安全加固后）
+## 安全要点
 
-```bash
-# Meilisearch Master Key 和 Admin Key 需要在环境中可用
-MEILI_MASTER_KEY=xxx MEILISEARCH_API_KEY=yyy cd /www/wwwroot/2345.desuwa.org/transspider && scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 >> /var/log/trans_spider.log 2>&1
-```
+1. **不要提交 `.env`** - 包含密钥
+2. **Master Key 保护** - 仅在服务器环境使用
+3. **GitHub OAuth Secret** - 保持机密
+4. **Session Cookie** - 生产环境启用 Secure/HttpOnly
+5. **输入验证** - 所有 API 参数经过校验
+6. **XSS 防护** - 输出使用 `htmlspecialchars()`
 
-### 验证命令
+## 故障排除
 
-```bash
-# 验证 Meilisearch 需要认证（应返回 401）
-curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:7700/indexes
+详见 [docs/deploy/TROUBLESHOOTING.md](docs/deploy/TROUBLESHOOTING.md)
 
-# 验证前端搜索正常工作
-curl -s "https://2345.desuwa.org/?q=HRT" | grep "找到约"
+常见问题：
+- Meilisearch 启动失败 → 检查 Docker
+- API Key 错误 → 检查 .env 配置
+- 爬虫失败 → 检查 Python 虚拟环境
+- 搜索无结果 → 运行爬虫
 
-# 验证 API 需要用户认证
-curl -s "http://127.0.0.1:5000/api/search?q=test" | grep "缺少 API Key"
-```
+## 相关链接
 
-## API 配置
-
-环境变量（参考 api/env.example）:
-- GITHUB_CLIENT_ID
-- GITHUB_CLIENT_SECRET
-- FLASK_SECRET（必填，无默认值）
-- ADMIN_USERS
-- MEILISEARCH_HOST
-- MEILISEARCH_PORT
-- MEILISEARCH_API_KEY（Search Key）
-- MEILI_MASTER_KEY（Master Key，用于生成其他 Key）
-- SITE_URL
+- **用户文档**: [README.md](README.md)
+- **部署文档**: [docs/deploy/](docs/deploy/)
+- **AI Skill**: [.claude/skills/deploy.md](.claude/skills/deploy.md)
+- **API 文档**: [docs/API.md](docs/API.md)
+- **变更日志**: [CHANGELOG.md](CHANGELOG.md)

@@ -36,7 +36,63 @@
 
 ---
 
-## 快速部署
+## 🚀 快速部署（新版 - 推荐）
+
+**只需一行命令，全自动部署：**
+
+```bash
+# 1. 克隆代码
+git clone https://github.com/epheiamoe/2345.desuwa.org.git
+cd 2345.desuwa.org
+
+# 2. 运行部署向导（交互式）
+./scripts/install.sh
+
+# 或全自动模式（适合CI/CD）
+./scripts/install.sh --mode minimal --auto \
+  --domain search.example.com \
+  --title "My Search"
+```
+
+部署向导会自动完成：
+- ✅ 检测环境（PHP、Docker、Python）
+- ✅ 生成配置文件（`.env`、`config.json`）
+- ✅ 启动 Meilisearch（Docker）
+- ✅ 运行爬虫抓取网站数据
+- ✅ 添加直接链接（Steam游戏、社交媒体等）
+- ✅ 显示 Nginx 配置
+
+**详细部署文档：**
+- [5分钟快速开始](docs/deploy/QUICKSTART.md)
+- [最小模式部署](docs/deploy/MINIMAL.md)（仅搜索，无需OAuth）
+- [完整模式部署](docs/deploy/FULL.md)（搜索 + API + OAuth）
+- [Docker模式部署](docs/deploy/DOCKER.md)
+- [品牌替换指南](docs/deploy/REBRAND.md)
+- [故障排除](docs/deploy/TROUBLESHOOTING.md)
+
+### 🤖 AI 辅助部署
+
+本项目提供 **Claude Skill**，让 AI 自动帮你部署：
+
+```bash
+# 使用 Claude Code 或 Cursor 等 AI 编辑器
+# AI 会自动读取 .claude/skills/deploy.md 并执行部署
+```
+
+AI Skill 功能：
+- 自动检测环境并安装依赖
+- 选择合适的部署模式
+- 配置站点信息
+- 运行爬虫导入数据
+- 验证部署结果
+
+详见：[.claude/skills/deploy.md](.claude/skills/deploy.md)
+
+---
+
+## 📦 手动部署（旧版方式）
+
+如果你更喜欢手动控制每一步：
 
 ### 本地开发测试
 
@@ -63,124 +119,11 @@ php -S localhost:8080
 
 访问 http://localhost:8080 测试。
 
-### 生产环境部署（Docker + Nginx）
+### 生产环境部署
 
-#### 1. 克隆代码
-
-```bash
-git clone https://github.com/epheiamoe/2345.desuwa.org.git /var/www/2345.desuwa.org
-cd /var/www/2345.desuwa.org
-```
-
-#### 2. 启动 Meilisearch
-
-```bash
-docker-compose up -d
-```
-
-#### 3. 配置 API 服务
-
-```bash
-cd api
-cp env.example .env
-```
-
-编辑 `.env` 文件，配置以下内容：
-
-```bash
-# 必填：GitHub OAuth（用于登录）
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-
-# 必填：Flask session 密钥（随机字符串，至少32字符）
-FLASK_SECRET=your_random_secret_key
-
-# 必填：站点 URL（用于 OAuth 回调）
-SITE_URL=https://your-domain.com
-
-# 可选：管理员 GitHub 用户名（逗号分隔）
-ADMIN_USERS=your_github_username
-
-# 可选：Meilisearch 配置
-MEILISEARCH_HOST=localhost
-MEILISEARCH_PORT=7700
-MEILISEARCH_INDEX=trans_resources
-MEILISEARCH_API_KEY=  # 生产环境必须设置
-MEILI_MASTER_KEY=      # 用于生成其他 Key
-
-# 可选：速率限制（覆盖 config.json 默认值）
-RATE_LIMIT_PER_MINUTE=10
-RATE_LIMIT_PER_DAY=1000
-RATE_LIMIT_PER_MONTH=2000
-
-API_PORT=5000
-```
-
-启动 API 服务：
-
-```bash
-pip install -r requirements.txt
-
-# 如果使用新组件（推荐）
-python app.py
-
-# 或使用部署脚本
-bash ../scripts/deploy.sh
-```
-
-#### 4. 配置 Nginx
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    root /var/www/2345.desuwa.org/frontend;
-    index index.php;
-
-    # PHP-FPM
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php-fpm.sock;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-
-    # API 反向代理
-    location /api/ {
-        proxy_pass http://127.0.0.1:5000/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-#### 5. 运行爬虫
-
-```bash
-cd /var/www/2345.desuwa.org/transspider
-pip install scrapy trafilatura meilisearch
-
-# 首次爬取
-scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000
-
-# 添加直接链接
-python add_direct_links.py
-```
-
-#### 6. 设置定时任务
-
-```bash
-# 每周日凌晨3点更新索引
-0 3 * * 0 cd /var/www/2345.desuwa.org/transspider && MEILI_MASTER_KEY=xxx MEILISEARCH_API_KEY=yyy scrapy crawl trans -s CLOSESPIDER_ITEMCOUNT=2000 >> /var/log/trans-spider.log 2>&1
-0 3 * * 1 cd /var/www/2345.desuwa.org && MEILISEARCH_API_KEY=yyy python add_direct_links.py >> /var/log/trans-spider.log 2>&1
-```
-
-#### 7. 启用健康检查（可选）
-
-```bash
-# 添加健康检查到定时任务（每5分钟）
-*/5 * * * * /var/www/2345.desuwa.org/scripts/health_check.sh >> /var/log/health-check.log 2>&1
-```
+参考详细文档：
+- [最小模式](docs/deploy/MINIMAL.md) - PHP + Meilisearch
+- [完整模式](docs/deploy/FULL.md) - 含 API + OAuth
 
 ---
 
@@ -193,18 +136,118 @@ python add_direct_links.py
 5. **输入验证**：v1.3+ 新增 validators.py，对所有 API 参数进行校验
 6. **HTTPS**：务必使用 HTTPS 部署
 
-## 架构变更说明（v1.3）
+## 📋 从旧版迁移
+
+如果你之前部署过旧版本，请按以下步骤迁移：
+
+### 1. 备份数据
+
+```bash
+# 备份索引
+curl -X POST 'http://localhost:7700/indexes/trans_resources/documents/fetch' \
+  -H 'Authorization: Bearer YOUR_MASTER_KEY' \
+  -o backup_index.json
+
+# 备份数据库
+cp api/db.json api/db.json.backup
+
+# 备份配置
+cp .env .env.backup
+cp config.json config.json.backup
+```
+
+### 2. 更新代码
+
+```bash
+# 拉取最新代码
+git pull origin main
+
+# 或使用新仓库
+git clone https://github.com/epheiamoe/2345.desuwa.org.git trans-search-new
+cd trans-search-new
+```
+
+### 3. 迁移配置
+
+```bash
+# 复制旧配置（如有）
+cp /path/to/old/.env .env
+cp /path/to/old/config.json config.json
+
+# 或使用新的配置模板
+cp .env.full.example .env
+cp config.example.json config.json
+
+# 编辑配置文件
+nano .env
+nano config.json
+```
+
+### 4. 重新部署
+
+```bash
+# 运行部署向导
+./scripts/install.sh --mode full --auto \
+  --domain your-domain.com \
+  --title "Your Search"
+```
+
+### 5. 恢复数据（可选）
+
+```bash
+# 如果有备份的索引数据
+python3 << 'EOF'
+import json, requests
+key = open('.env').read().split('MEILI_MASTER_KEY=')[1].split('\n')[0]
+url = 'http://localhost:7700/indexes/trans_resources/documents'
+docs = json.load(open('backup_index.json'))
+requests.post(url, headers={'Authorization': f'Bearer {key}'}, json=docs)
+print(f'Restored {len(docs)} documents')
+EOF
+```
+
+---
+
+## 架构变更说明（v2.0 - Easy Deploy）
+
+### 新增功能
+
+- **一键部署**: `./scripts/install.sh` 全自动部署向导
+- **三种模式**: minimal（仅搜索）/ full（+API+OAuth）/ docker（容器化）
+- **自动数据导入**: 部署时自动运行爬虫和添加直接链接
+- **品牌替换**: `./scripts/rebrand.sh` 一键替换所有品牌信息
+- **部署验证**: `./scripts/verify.sh` 检查所有组件状态
+- **License 显示**: 自动提取并显示网页版权信息
+- **AI Skill**: `.claude/skills/deploy.md` 让 AI 自动部署
 
 ### 新组件
 
 ```
 api/
-├── app.py              # 主程序（待集成新组件）
-├── config.py           # 统一配置管理（.env + config.json）
+├── app.py              # 主程序
+├── config.py           # 统一配置管理
 ├── database.py         # SQLite 数据库层（WAL 模式）
 ├── rate_limiter.py     # 滑动窗口速率限制器
 ├── validators.py       # 输入验证器
+├── wsgi.py             # Gunicorn 入口
 └── env.example         # 环境变量模板
+
+scripts/
+├── install.sh          # 一键部署向导（NEW）
+├── rebrand.sh          # 品牌替换（NEW）
+├── verify.sh           # 部署验证（NEW）
+└── migrate_db.py       # 数据库迁移
+
+docs/deploy/
+├── QUICKSTART.md       # 5分钟快速开始
+├── MINIMAL.md          # 最小模式详解
+├── FULL.md             # 完整模式详解
+├── DOCKER.md           # Docker 模式
+├── REBRAND.md          # 品牌替换指南
+└── TROUBLESHOOTING.md  # 故障排除
+
+.claude/skills/
+└── deploy.md           # AI 部署 Skill
 ```
 
 ### 配置管理
@@ -213,6 +256,7 @@ api/
 
 - **环境变量**：`.env` 文件（敏感信息）
 - **共享配置**：`config.json`（站点设置、标签列表、语言支持）
+- **部署模式**：支持 minimal / full / docker 三种模式
 
 **不再**需要直接修改代码中的配置值。
 
@@ -389,6 +433,79 @@ curl "https://2345.desuwa.org/api/search?q=HRT" \
 
 ## 目录结构
 
+```
+2345.desuwa.org/
+├── frontend/              # PHP 前端
+│   ├── index.php         # 入口（请求处理）
+│   ├── template.php      # 模板渲染
+│   ├── functions.php     # 安全输出辅助函数
+│   ├── search.php        # 搜索逻辑
+│   ├── config.php        # 配置加载器
+│   ├── manifest.php      # 动态 PWA manifest
+│   ├── language_rules.php # 语言检测规则
+│   ├── style.css         # 样式（含 CSS 变量和暗黑模式）
+│   ├── search.js         # 前端脚本
+│   ├── manifest.json     # PWA 配置（静态备份）
+│   └── sw.js             # Service Worker
+├── transspider/           # Scrapy 爬虫
+│   ├── spiders/           # 爬虫代码
+│   ├── pipelines.py      # Meilisearch 推送（SHA-256 ID + License提取）
+│   ├── config.py         # 爬虫配置
+│   ├── items.py          # Item 定义
+│   └── utils.py          # 工具函数（URL 规范化）
+├── api/                   # Flask API 服务
+│   ├── app.py            # 主程序
+│   ├── config.py         # 统一配置管理
+│   ├── database.py       # SQLite 数据库层
+│   ├── rate_limiter.py   # 滑动窗口速率限制器
+│   ├── validators.py     # 输入验证器
+│   ├── auth.py           # 认证逻辑
+│   ├── language_rules.py # 语言检测规则
+│   ├── console.html      # API 控制台
+│   ├── wsgi.py           # Gunicorn 入口
+│   ├── Dockerfile        # API 容器化
+│   └── env.example       # 环境配置示例
+├── scripts/               # 部署脚本（NEW）
+│   ├── install.sh        # 一键部署向导
+│   ├── rebrand.sh        # 品牌替换
+│   ├── verify.sh         # 部署验证
+│   ├── deploy.sh         # 传统部署脚本
+│   ├── health_check.sh   # 健康检查
+│   └── migrate_db.py     # 数据库迁移工具
+├── docs/                  # 文档
+│   ├── deploy/           # 部署文档（NEW）
+│   │   ├── QUICKSTART.md   # 5分钟快速开始
+│   │   ├── MINIMAL.md      # 最小模式详解
+│   │   ├── FULL.md         # 完整模式详解
+│   │   ├── DOCKER.md       # Docker 模式
+│   │   ├── REBRAND.md      # 品牌替换指南
+│   │   └── TROUBLESHOOTING.md # 故障排除
+│   ├── API.md            # API 文档
+│   └── migration-v1.1.md # 迁移指南
+├── config/                # 配置模板（NEW）
+│   └── examples/
+│       ├── nginx.minimal.conf   # Nginx 最小配置
+│       ├── nginx.full.conf      # Nginx 完整配置
+│       ├── systemd.api.service  # Systemd 服务
+│       └── crontab.crawler      # 定时任务示例
+├── .claude/               # AI 配置（NEW）
+│   └── skills/
+│       └── deploy.md      # AI 部署 Skill
+├── .deploy/               # 设计文档
+│   ├── design.md          # 架构设计
+│   └── checklist.md       # 实施清单
+├── config.json           # 共享配置（站点、标签、语言）
+├── config.example.json   # 配置模板
+├── .env.example          # 环境变量模板
+├── .env.minimal.example  # 最小模式模板
+├── .env.full.example     # 完整模式模板
+├── domains.json          # 域名和标签列表
+├── domains_test.txt      # 测试用域名
+├── docker-compose.yml    # Meilisearch Docker
+├── docker-compose.full.yml # 完整 Docker Compose
+├── pyproject.toml        # Python 项目配置
+├── CHANGELOG.md          # 变更日志
+└── README.md
 ```
 2345.desuwa.org/
 ├── frontend/              # PHP 前端
