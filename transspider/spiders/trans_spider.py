@@ -184,6 +184,7 @@ class TransSpider(scrapy.Spider):
         item["title"] = title
         item["domain"] = domain
         item["content"] = content
+        item["html"] = response.text
         item["tags"] = self.domain_tags.get(domain, [])
         return item
 

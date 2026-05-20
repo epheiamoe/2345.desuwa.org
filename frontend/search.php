@@ -178,6 +178,7 @@ function search_meilisearch(
         'q'                     => $query,
         'limit'                 => $limit,
         'offset'                => $offset,
+        'attributesToRetrieve'  => ['*'],
         'attributesToHighlight' => ['title', 'content'],
         'highlightPreTag'       => '<em>',
         'highlightPostTag'      => '</em>',

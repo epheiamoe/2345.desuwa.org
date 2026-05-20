@@ -605,3 +605,32 @@ body.dark .error-msg {
 body.dark .results-info {
     color: #9aa0a6;
 }
+
+/* License badge */
+.result-license {
+    margin-top: var(--space-md);
+}
+
+.license-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.license-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+body.dark .license-badge {
+    background: #303134;
+    border-color: #5f6368;
+    color: #9aa0a6;
+}

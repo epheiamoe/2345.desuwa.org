@@ -8,11 +8,14 @@
 """
 
 import hashlib
+import json
 import os
+import re
 import sys
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import meilisearch
 from scrapy import Spider
@@ -25,6 +28,136 @@ from transspider.config import (
     MEILISEARCH_PORT,
 )
 from transspider.utils import normalize_url
+
+
+def normalize_license(value: str) -> Optional[Dict[str, str]]:
+    """
+    将原始 license 值标准化为统一格式。
+
+    支持 Creative Commons 系列的标准化映射，其他 license 保留原始信息。
+
+    Args:
+        value: 原始 license 值（URL 或标识符）。
+
+    Returns:
+        标准化后的字典，包含 type、url、name；无法识别时返回 None。
+    """
+    if not value:
+        return None
+
+    value_stripped = value.strip()
+    value_lower = value_stripped.lower()
+
+    # Creative Commons 标准映射
+    cc_patterns = {
+        "https://creativecommons.org/licenses/by/4.0/": "CC-BY-4.0",
+        "https://creativecommons.org/licenses/by-sa/4.0/": "CC-BY-SA-4.0",
+        "https://creativecommons.org/licenses/by-nc/4.0/": "CC-BY-NC-4.0",
+        "https://creativecommons.org/licenses/by-nc-sa/4.0/": "CC-BY-NC-SA-4.0",
+        "https://creativecommons.org/licenses/by-nd/4.0/": "CC-BY-ND-4.0",
+        "https://creativecommons.org/licenses/by-nc-nd/4.0/": "CC-BY-NC-ND-4.0",
+        "cc-by-4.0": "CC-BY-4.0",
+        "cc-by-sa-4.0": "CC-BY-SA-4.0",
+        "cc-by-nc-4.0": "CC-BY-NC-4.0",
+        "cc by 4.0": "CC-BY-4.0",
+        "cc by-sa 4.0": "CC-BY-SA-4.0",
+        "cc by-nc 4.0": "CC-BY-NC-4.0",
+    }
+
+    for pattern, license_type in cc_patterns.items():
+        if pattern in value_lower or value_lower == pattern:
+            return {
+                "type": license_type,
+                "url": value_stripped
+                if value_stripped.startswith("http")
+                else f"https://creativecommons.org/licenses/{license_type.lower().replace('cc-', '')}/4.0/",
+                "name": f"Creative Commons {license_type.replace('CC-', '').replace('-', ' ')} 4.0",
+            }
+
+    # 非 CC license：提取域名作为 type
+    if value_stripped.startswith("http"):
+        domain = urlparse(value_stripped).netloc
+        return {"type": domain, "url": value_stripped, "name": domain}
+
+    # 其他标识符直接保留
+    return {"type": value_stripped, "url": "", "name": value_stripped}
+
+
+def extract_license(html_text: Optional[str]) -> Optional[Dict[str, str]]:
+    """
+    从 HTML 响应中提取版权许可信息。
+
+    检查顺序（按优先级）：
+    1. <meta name="license" content="...">
+    2. <a rel="license" href="...">
+    3. JSON-LD schema.org 中的 license 字段
+    4. 页面文本中的 "Licensed under..." 模式（备选）
+
+    Args:
+        html_text: 页面原始 HTML 文本。
+
+    Returns:
+        {"type": "CC-BY-SA-4.0", "url": "...", "name": "..."} 或 None。
+    """
+    if not html_text:
+        return None
+
+    # 1. meta 标签
+    meta_patterns = [
+        r'<meta[^>]*name=["\']license["\'][^>]*content=["\']([^"\']+)["\']',
+        r'<meta[^>]*content=["\']([^"\']+)["\'][^>]*name=["\']license["\']',
+    ]
+    for pattern in meta_patterns:
+        match = re.search(pattern, html_text, re.IGNORECASE)
+        if match:
+            result = normalize_license(match.group(1))
+            if result:
+                return result
+
+    # 2. a[rel="license"]
+    a_patterns = [
+        r'<a[^>]*rel=["\']license["\'][^>]*href=["\']([^"\']+)["\']',
+        r'<a[^>]*href=["\']([^"\']+)["\'][^>]*rel=["\']license["\']',
+    ]
+    for pattern in a_patterns:
+        match = re.search(pattern, html_text, re.IGNORECASE)
+        if match:
+            result = normalize_license(match.group(1))
+            if result:
+                return result
+
+    # 3. JSON-LD
+    jsonld_pattern = re.compile(
+        r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
+        re.DOTALL | re.IGNORECASE,
+    )
+    for match in jsonld_pattern.finditer(html_text):
+        try:
+            data = json.loads(match.group(1))
+            targets = data if isinstance(data, list) else [data]
+            for item in targets:
+                if not isinstance(item, dict):
+                    continue
+                license_url = item.get("license") or item.get(
+                    "http://schema.org/license"
+                )
+                if license_url and isinstance(license_url, str):
+                    result = normalize_license(license_url)
+                    if result:
+                        return result
+        except (json.JSONDecodeError, ValueError):
+            continue
+
+    # 4. 页面文本中的 "Licensed under..." 模式
+    text_match = re.search(
+        r'licensed under ([^<\n]+)', html_text, re.IGNORECASE
+    )
+    if text_match:
+        result = normalize_license(text_match.group(1).strip())
+        if result:
+            return result
+
+    return None
 
 
 class ContentExtractionPipeline:
@@ -88,7 +221,7 @@ class MeilisearchPipeline:
             index = client.create_index(index_name, {"primaryKey": "id"})
 
         index.update_searchable_attributes(["title", "content", "domain", "tags"])
-        index.update_filterable_attributes(["domain", "tags"])
+        index.update_filterable_attributes(["domain", "tags", "license_type"])
         index.update_sortable_attributes(["url"])
 
     def open_spider(self, spider: Spider) -> None:
@@ -148,6 +281,12 @@ class MeilisearchPipeline:
             "tags": item.get("tags", []),
             "crawled_at": datetime.now().isoformat(),
         }
+
+        # Extract license information from HTML
+        license_info = extract_license(item.get("html", ""))
+        if license_info:
+            doc["license_type"] = license_info["type"]
+            doc["license_url"] = license_info["url"]
 
         if not doc["title"] or not doc["url"]:
             spider.logger.warning("跳过空标题或无效 URL: %s", url)

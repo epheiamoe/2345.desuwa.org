@@ -54,8 +54,10 @@ function render_header(array $data): void {
         <nav class="nav-links" aria-label="主导航">
             <a href="<?php echo e(AppConfig::get('site.partner_site', 'https://2345.lgbt')); ?>" target="_blank" rel="noopener"><?php echo e(AppConfig::get('site.partner_site_name', '2345.lgbt 导航站')); ?></a>
             <a href="<?php echo e(AppConfig::get('site.github_repo', 'https://github.com/epheiamoe/2345.desuwa.org')); ?>" target="_blank" rel="noopener" style="color:#1a73e8;">⭐ 开源</a>
+            <?php if (AppConfig::isApiEnabled()): ?>
             <a href="/api/console.html" target="_blank" rel="noopener">API 控制台</a>
             <a href="/docs/api.html" target="_blank" rel="noopener">API 文档</a>
+            <?php endif; ?>
             <a href="javascript:window.TransSearch && window.TransSearch.toggleTheme()" id="theme-toggle" title="切换主题" aria-label="切换明暗主题"><span aria-hidden="true">🌙</span></a>
         </nav>
     </header>
@@ -294,6 +296,18 @@ function render_domain_filter(array $data): void {
  *
  * @param array $results 搜索结果数组
  */
+function format_license(string $license_type): string {
+    $cc_names = [
+        'CC-BY-4.0' => 'CC BY',
+        'CC-BY-SA-4.0' => 'CC BY-SA',
+        'CC-BY-NC-4.0' => 'CC BY-NC',
+        'CC-BY-NC-SA-4.0' => 'CC BY-NC-SA',
+        'CC-BY-ND-4.0' => 'CC BY-ND',
+        'CC-BY-NC-ND-4.0' => 'CC BY-NC-ND',
+    ];
+    return $cc_names[$license_type] ?? $license_type;
+}
+
 function render_results_list(array $results): void {
     ?>
     <div class="results-list">
@@ -346,6 +360,20 @@ function render_results_list(array $results): void {
                     <?php echo e(mb_substr($result['content'] ?? '', 0, 200)); ?>...
                 <?php endif; ?>
             </div>
+            <?php if (!empty($result['license_type'])): ?>
+            <div class="result-license">
+                <span class="license-badge" title="<?= e($result['license_type']) ?>">
+                    <svg class="license-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <?= e(format_license($result['license_type'])) ?>
+                </span>
+            </div>
+            <?php endif; ?>
         </article>
     <?php endforeach; ?>
     </div>
