@@ -113,6 +113,48 @@ class AppConfig {
         $protocol = $useSsl ? 'https' : 'http';
         return "$protocol://$host:$port";
     }
+
+    /**
+     * 判断 API 功能是否启用
+     *
+     * 优先读取 .env 的 ENABLE_API，其次读取 config.json 的 deploy.features.api。
+     * 如果两者都不存在，默认返回 true 以保持向后兼容（现有部署不受影响）。
+     */
+    public static function isApiEnabled(): bool {
+        $envValue = self::env('ENABLE_API', '');
+        if ($envValue !== '') {
+            return strtolower($envValue) === 'true' || $envValue === '1';
+        }
+
+        $configValue = self::get('deploy.features.api');
+        if ($configValue !== null) {
+            return (bool) $configValue;
+        }
+
+        // 向后兼容：未配置时默认启用 API
+        return true;
+    }
+
+    /**
+     * 判断 OAuth 功能是否启用
+     *
+     * 优先读取 .env 的 ENABLE_OAUTH，其次读取 config.json 的 deploy.features.oauth。
+     * 如果两者都不存在，默认返回 true 以保持向后兼容。
+     */
+    public static function isOAuthEnabled(): bool {
+        $envValue = self::env('ENABLE_OAUTH', '');
+        if ($envValue !== '') {
+            return strtolower($envValue) === 'true' || $envValue === '1';
+        }
+
+        $configValue = self::get('deploy.features.oauth');
+        if ($configValue !== null) {
+            return (bool) $configValue;
+        }
+
+        // 向后兼容：未配置时默认启用 OAuth
+        return true;
+    }
 }
 
 AppConfig::init();

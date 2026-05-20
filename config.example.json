@@ -1,16 +1,16 @@
 {
   "site": {
-    "name": "2345.desuwa.org",
-    "title": "跨性别资源搜索",
-    "url": "https://2345.desuwa.org",
-    "github_repo": "https://github.com/epheiamoe/2345.desuwa.org",
-    "partner_site": "https://2345.lgbt"
+    "name": "{{SITE_NAME}}",
+    "title": "{{SITE_TITLE}}",
+    "url": "{{SITE_URL}}",
+    "github_repo": "https://github.com/yourname/your-repo",
+    "partner_site": ""
   },
   "deploy": {
-    "mode": "minimal",
+    "mode": "{{DEPLOY_MODE}}",
     "features": {
-      "api": false,
-      "oauth": false,
+      "api": {{ENABLE_API}},
+      "oauth": {{ENABLE_OAUTH}},
       "crawler": true
     }
   },
