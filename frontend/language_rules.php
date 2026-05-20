@@ -115,7 +115,7 @@ function detectLanguageFromUrl($url) {
     $bestWeight = 0;
     
     foreach ($URL_PATTERN_RULES as $rule) {
-        if (preg_match('#' . $rule['pattern'] . '#i', $url)) {
+        if (preg_match('#' . $rule['pattern'] . '#iu', $url)) {
             if ($rule['weight'] > $bestWeight) {
                 $bestWeight = $rule['weight'];
                 $bestMatch = $rule['lang'];
