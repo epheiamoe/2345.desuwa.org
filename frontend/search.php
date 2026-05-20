@@ -78,22 +78,46 @@ function check_rate_limit(string $ip): string {
     $rate_limit_file = sys_get_temp_dir() . '/search_rate_' . md5($ip);
     $now = time();
 
-    if (file_exists($rate_limit_file)) {
-        $rate_data = json_decode(file_get_contents($rate_limit_file), true);
-        if ($rate_data && ($now - $rate_data['time']) < 60) {
-            if ($rate_data['count'] >= 20) {
-                return '搜索次数超限，请稍后再试';
-            }
-            $rate_data['count']++;
-            file_put_contents($rate_limit_file, json_encode($rate_data));
-        } else {
-            file_put_contents($rate_limit_file, json_encode(['time' => $now, 'count' => 1]));
-        }
-    } else {
-        file_put_contents($rate_limit_file, json_encode(['time' => $now, 'count' => 1]));
+    // 使用文件锁保护读写操作，防止并发竞态条件
+    $fp = @fopen($rate_limit_file, 'c+');
+    if (!$fp) {
+        // 无法打开文件时允许请求（fail open）
+        return '';
     }
 
-    return '';
+    if (!flock($fp, LOCK_EX)) {
+        fclose($fp);
+        return '';
+    }
+
+    $content = '';
+    $size = filesize($rate_limit_file);
+    if ($size !== false && $size > 0) {
+        $content = fread($fp, $size);
+    }
+
+    $error = '';
+    $rate_data = json_decode($content, true);
+
+    if ($rate_data && ($now - $rate_data['time']) < 60) {
+        if ($rate_data['count'] >= 20) {
+            $error = '搜索次数超限，请稍后再试';
+        } else {
+            $rate_data['count']++;
+            ftruncate($fp, 0);
+            rewind($fp);
+            fwrite($fp, json_encode($rate_data));
+        }
+    } else {
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode(['time' => $now, 'count' => 1]));
+    }
+
+    flock($fp, LOCK_UN);
+    fclose($fp);
+
+    return $error;
 }
 
 /**
