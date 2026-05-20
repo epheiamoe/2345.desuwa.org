@@ -3,7 +3,6 @@
 import json
 import os
 import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -17,14 +16,14 @@ class TestDatabaseInit:
         """Should create database file on initialization."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test.db")
-            db = Database(db_path)
+            Database(db_path)
             assert os.path.exists(db_path)
 
     def test_creates_parent_directory(self):
         """Should create parent directories if needed."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "nested", "dir", "test.db")
-            db = Database(db_path)
+            Database(db_path)
             assert os.path.exists(db_path)
 
     def test_uses_default_path(self):

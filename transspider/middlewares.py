@@ -1,17 +1,14 @@
-# -*- coding: utf-8 -*-
-"""
-Scrapy 中间件
+"""Scrapy 中间件
 包含：
 1. 随机 User-Agent 中间件
 2. WARP 代理中间件（可选）
 """
 
-import random
 import os
+import random
 import sys
 
 from scrapy import signals
-from itemadapter import ItemAdapter
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -21,19 +18,45 @@ from transspider.config import USE_WARP_PROXY, WARP_SOCKS5_PROXY
 
 # 随机 User-Agent 列表
 USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) "
+        "Gecko/20100101 Firefox/121.0"
+    ),
+    (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+        "Version/17.1 Safari/605.1.15"
+    ),
+    (
+        "Mozilla/5.0 (X11; Linux x86_64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/119.0.0.0 Safari/537.36"
+    ),
+    (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/119.0.0.0 Safari/537.36"
+    ),
 ]
 
 
 class RandomUserAgentMiddleware:
-    """
-    随机 User-Agent 中间件
+    """随机 User-Agent 中间件
 
     每次请求随机选择一个 User-Agent
     避免被目标网站识别为爬虫
@@ -47,9 +70,7 @@ class RandomUserAgentMiddleware:
         return s
 
     def process_request(self, request, spider):
-        """
-        处理请求，设置随机 User-Agent
-        """
+        """处理请求，设置随机 User-Agent"""
         request.headers["User-Agent"] = random.choice(USER_AGENTS)
 
     def spider_opened(self, spider):
@@ -58,8 +79,7 @@ class RandomUserAgentMiddleware:
 
 
 class ProxyMiddleware:
-    """
-    WARP 代理中间件（可选）
+    """WARP 代理中间件（可选）
 
     从 config.py 读取配置，控制是否启用 WARP 代理
     """
@@ -75,8 +95,7 @@ class ProxyMiddleware:
         return s
 
     def process_request(self, request, spider):
-        """
-        处理请求，添加代理
+        """处理请求，添加代理
 
         仅在启用时添加代理
         """
@@ -93,9 +112,7 @@ class ProxyMiddleware:
 
 
 class TransspiderSpiderMiddleware:
-    """
-    Spider 中间件基类
-    """
+    """Spider 中间件基类"""
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -110,8 +127,7 @@ class TransspiderSpiderMiddleware:
 
     def process_spider_output(self, response, result, spider):
         """处理输出"""
-        for i in result:
-            yield i
+        yield from result
 
     def process_spider_exception(self, response, exception, spider):
         """处理异常"""
@@ -124,13 +140,11 @@ class TransspiderSpiderMiddleware:
 
     def spider_opened(self, spider):
         """爬虫启动"""
-        spider.logger.info("Spider opened: %s" % spider.name)
+        spider.logger.info(f"Spider opened: {spider.name}")
 
 
 class TransspiderDownloaderMiddleware:
-    """
-    下载器中间件基类
-    """
+    """下载器中间件基类"""
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -153,4 +167,4 @@ class TransspiderDownloaderMiddleware:
 
     def spider_opened(self, spider):
         """爬虫启动"""
-        spider.logger.info("Spider opened: %s" % spider.name)
+        spider.logger.info(f"Spider opened: {spider.name}")

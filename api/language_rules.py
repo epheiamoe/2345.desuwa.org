@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-语言检测规则配置
+"""语言检测规则配置
 
 此文件定义了 URL 到语言的映射规则，用于搜索引擎的语言筛选功能。
 规则按优先级排序，匹配即返回。
@@ -85,8 +83,7 @@ CHINESE_PATTERN = re.compile(r"[\u4e00-\u9fff]")
 
 
 def detect_language_from_url(url):
-    """
-    从 URL 检测语言
+    """从 URL 检测语言
 
     Args:
         url: 完整的 URL
@@ -104,10 +101,12 @@ def detect_language_from_url(url):
     best_weight = 0
 
     for rule in URL_PATTERN_RULES:
-        if re.search(rule["pattern"], url, re.IGNORECASE):
-            if rule["weight"] > best_weight:
-                best_weight = rule["weight"]
-                best_match = rule["lang"]
+        if (
+            re.search(rule["pattern"], url, re.IGNORECASE)
+            and rule["weight"] > best_weight
+        ):
+            best_weight = rule["weight"]
+            best_match = rule["lang"]
 
     if best_match:
         return best_match
@@ -133,8 +132,7 @@ def detect_language_from_url(url):
 
 
 def language_matches(url, selected_lang):
-    """
-    检测语言是否匹配用户选择的语言
+    """检测语言是否匹配用户选择的语言
 
     Args:
         url: 要检测的 URL

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """WSGI 入口文件
 
 用于 Gunicorn 等 WSGI 服务器启动应用。

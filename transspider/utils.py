@@ -1,18 +1,14 @@
-# -*- coding: utf-8 -*-
-"""
-跨性别资源搜索引擎 - URL 工具函数
+"""跨性别资源搜索引擎 - URL 工具函数
 
 提供 URL 规范化与域名校验工具，确保爬虫内部 URL 表示的一致性，
 降低因 URL 形式差异导致的重复爬取或 ID 冲突风险。
 """
 
-from typing import List
-from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 
 def normalize_url(url: str) -> str:
-    """
-    规范化 URL。
+    """规范化 URL。
 
     执行以下规范化操作：
     1. 去除 fragment（# 后的内容）
@@ -65,9 +61,8 @@ def normalize_url(url: str) -> str:
     return urlunparse((scheme, netloc, path, "", query, fragment))
 
 
-def is_valid_url(url: str, allowed_domains: List[str]) -> bool:
-    """
-    检查 URL 是否在允许的域名列表中。
+def is_valid_url(url: str, allowed_domains: list[str]) -> bool:
+    """检查 URL 是否在允许的域名列表中。
 
     域名比较时会去除 ``www.`` 前缀并统一转为小写，
     与 ``allowed_domains`` 中预期的域名格式保持一致。

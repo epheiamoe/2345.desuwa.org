@@ -1,14 +1,10 @@
-# -*- coding: utf-8 -*-
-"""
-跨性别资源搜索引擎 - Items 定义
-"""
+"""跨性别资源搜索引擎 - Items 定义"""
 
 import scrapy
 
 
 class TransResourceItem(scrapy.Item):
-    """
-    跨性别资源数据模型
+    """跨性别资源数据模型
 
     字段：
     - url: 页面 URL

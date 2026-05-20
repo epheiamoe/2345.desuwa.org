@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-2345.desuwa.org API 服务
+"""2345.desuwa.org API 服务
 
 重构后的 Flask API，使用新的安全组件：
 - api.config: 统一配置管理
@@ -14,25 +12,26 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 from functools import wraps
-from typing import Any, Dict, Optional
+from typing import Any
 
-from flask import Flask, jsonify, redirect, request, send_from_directory, session
-from flask_cors import CORS
 import meilisearch
 import requests
-
-from api.config import ConfigError, config
-from api.database import DatabaseError, db
-from api.rate_limiter import RateLimitError, rate_limiter
-from api.validators import InputValidator, ValidationError
+from flask import Flask, jsonify, redirect, request, send_from_directory, session
+from flask_cors import CORS
 
 # 引入语言检测规则
 from language_rules import detect_language_from_url
+
+from api.config import config
+from api.database import DatabaseError, db
+from api.rate_limiter import RateLimitError, rate_limiter
+from api.validators import InputValidator, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -167,10 +166,8 @@ def require_api_key(f):
             return response
 
         # 记录使用（审计日志失败不影响主流程）
-        try:
+        with contextlib.suppress(Exception):
             db.log_api_usage(api_key, request.path)
-        except Exception:
-            pass
 
         # 将用户信息附加到请求对象
         request.user_id = key_info.get("github_id", "")
@@ -479,7 +476,7 @@ def search() -> Any:
         return jsonify({"error": str(exc)}), 400
 
     # 构建搜索参数
-    search_params: Dict[str, Any] = {
+    search_params: dict[str, Any] = {
         "q": query,
         "limit": 100,  # 先获取更多结果，再过滤
         "offset": 0,

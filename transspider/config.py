@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Scrapy 跨性别资源爬虫配置
+"""Scrapy 跨性别资源爬虫配置
 
 配置加载策略（优先级从高到低）：
 1. 环境变量（生产环境推荐）
@@ -99,8 +97,7 @@ USER_AGENTS: list[str] = [
 
 
 def load_domains() -> list[str]:
-    """
-    从 ``domains.json`` 加载域名列表（用于 ``allowed_domains`` 过滤）。
+    """从 ``domains.json`` 加载域名列表（用于 ``allowed_domains`` 过滤）。
 
     Returns:
         域名字符串列表。若文件不存在则返回空列表。
@@ -115,8 +112,7 @@ def load_domains() -> list[str]:
 
 
 def load_start_urls() -> list[str]:
-    """
-    从 ``domains.json`` 加载起始 URL 列表。
+    """从 ``domains.json`` 加载起始 URL 列表。
 
     Returns:
         URL 字符串列表。若文件不存在则返回空列表。
@@ -131,8 +127,7 @@ def load_start_urls() -> list[str]:
 
 
 def get_random_user_agent() -> str:
-    """
-    从预定义池中随机选择一个 User-Agent。
+    """从预定义池中随机选择一个 User-Agent。
 
     Returns:
         User-Agent 字符串。

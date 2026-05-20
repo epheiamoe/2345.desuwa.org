@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """速率限制器模块
 
 基于 SQLite 存储的速率限制器，解决原内存存储方案
@@ -14,7 +13,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from api.database import Database, DatabaseError, db
 
@@ -56,8 +55,8 @@ class RateLimiter:
 
     def __init__(
         self,
-        limits: Optional[Dict[str, int]] = None,
-        database: Optional[Database] = None,
+        limits: dict[str, int] | None = None,
+        database: Database | None = None,
     ) -> None:
         """初始化速率限制器
 
@@ -106,7 +105,7 @@ class RateLimiter:
 
         return now - (now % window)
 
-    def is_allowed(self, key: str) -> Tuple[bool, Optional[Dict[str, Any]]]:
+    def is_allowed(self, key: str) -> tuple[bool, dict[str, Any] | None]:
         """检查请求是否允许
 
         检查指定 key 的当前请求计数是否超出限制，
@@ -154,7 +153,6 @@ class RateLimiter:
 
         # 复制记录为可变的字典
         counters = dict(record)
-        reset_needed = False
 
         # 检查并重置过期的时间窗口
         if now >= counters["minute_reset"]:
@@ -162,21 +160,18 @@ class RateLimiter:
             counters["minute_reset"] = (
                 self._get_window_start("minute") + self.WINDOW_SECONDS["minute"]
             )
-            reset_needed = True
 
         if now >= counters["day_reset"]:
             counters["day_count"] = 0
             counters["day_reset"] = (
                 self._get_window_start("day") + self.WINDOW_SECONDS["day"]
             )
-            reset_needed = True
 
         if now >= counters["month_reset"]:
             counters["month_count"] = 0
             counters["month_reset"] = (
                 self._get_window_start("month") + self.WINDOW_SECONDS["month"]
             )
-            reset_needed = True
 
         # 检查是否超出限制
         if counters["minute_count"] >= self.limits["per_minute"]:
@@ -200,7 +195,7 @@ class RateLimiter:
 
         return True, self._build_info(counters, remaining=True)
 
-    def _build_info(self, counters: Dict[str, Any], remaining: bool) -> Dict[str, Any]:
+    def _build_info(self, counters: dict[str, Any], remaining: bool) -> dict[str, Any]:
         """构建速率限制响应信息
 
         生成包含配额和重置时间的字典，用于 API 响应头。
@@ -231,7 +226,7 @@ class RateLimiter:
             "allowed": remaining,
         }
 
-    def get_status(self, key: str) -> Dict[str, Any]:
+    def get_status(self, key: str) -> dict[str, Any]:
         """获取当前速率限制状态（不增加计数）
 
         Args:

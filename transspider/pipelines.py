@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-跨性别资源搜索引擎 - Pipeline
+"""跨性别资源搜索引擎 - Pipeline
 
 负责：
 1. 内容提取占位（实际在 Spider 层完成）
@@ -14,7 +12,7 @@ import re
 import sys
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 import meilisearch
@@ -30,9 +28,8 @@ from transspider.config import (
 from transspider.utils import normalize_url
 
 
-def normalize_license(value: str) -> Optional[Dict[str, str]]:
-    """
-    将原始 license 值标准化为统一格式。
+def normalize_license(value: str) -> dict[str, str] | None:
+    """将原始 license 值标准化为统一格式。
 
     支持 Creative Commons 系列的标准化映射，其他 license 保留原始信息。
 
@@ -71,9 +68,15 @@ def normalize_license(value: str) -> Optional[Dict[str, str]]:
                 "url": (
                     value_stripped
                     if value_stripped.startswith("http")
-                    else f"https://creativecommons.org/licenses/{license_type.lower().replace('cc-', '')}/4.0/"
+                    else (
+                        f"https://creativecommons.org/licenses/"
+                        f"{license_type.lower().replace('cc-', '')}/4.0/"
+                    )
                 ),
-                "name": f"Creative Commons {license_type.replace('CC-', '').replace('-', ' ')} 4.0",
+                "name": (
+                    f"Creative Commons "
+                    f"{license_type.replace('CC-', '').replace('-', ' ')} 4.0"
+                ),
             }
 
     # 非 CC license：提取域名作为 type
@@ -85,9 +88,8 @@ def normalize_license(value: str) -> Optional[Dict[str, str]]:
     return {"type": value_stripped, "url": "", "name": value_stripped}
 
 
-def extract_license(html_text: Optional[str]) -> Optional[Dict[str, str]]:
-    """
-    从 HTML 响应中提取版权许可信息。
+def extract_license(html_text: str | None) -> dict[str, str] | None:
+    """从 HTML 响应中提取版权许可信息。
 
     检查顺序（按优先级）：
     1. <meta name="license" content="...">
@@ -161,8 +163,7 @@ def extract_license(html_text: Optional[str]) -> Optional[Dict[str, str]]:
 
 
 class ContentExtractionPipeline:
-    """
-    内容提取 Pipeline（占位）。
+    """内容提取 Pipeline（占位）。
 
     当前项目中正文提取已在 ``TransSpider`` 中通过
     ``trafilatura`` 完成，本 Pipeline 仅透传 Item。
@@ -174,8 +175,7 @@ class ContentExtractionPipeline:
 
 
 class MeilisearchPipeline:
-    """
-    Meilisearch 推送 Pipeline。
+    """Meilisearch 推送 Pipeline。
 
     将爬取的页面批量推送到 Meilisearch 索引。
     使用 SHA-256 前 16 位生成文档 ID，并提供批量推送的指数退避重试。
@@ -192,18 +192,17 @@ class MeilisearchPipeline:
         self.client = meilisearch.Client(
             f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}", api_key
         )
-        self.index: Optional[Any] = None
-        self.items_buffer: List[Dict[str, Any]] = []
+        self.index: Any | None = None
+        self.items_buffer: list[dict[str, Any]] = []
 
     @staticmethod
     def setup_index(
         host: str = MEILISEARCH_HOST,
         port: int = MEILISEARCH_PORT,
         index_name: str = MEILISEARCH_INDEX,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
     ) -> None:
-        """
-        部署时调用：创建索引并配置可搜索/可筛选/可排序属性。
+        """部署时调用：创建索引并配置可搜索/可筛选/可排序属性。
 
         该操作只需在索引首次创建或需要变更配置时执行，
         不应在每次爬虫启动时重复调用，避免不必要的 API 开销。
@@ -225,8 +224,7 @@ class MeilisearchPipeline:
         index.update_sortable_attributes(["url"])
 
     def open_spider(self, spider: Spider) -> None:
-        """
-        爬虫启动时执行。
+        """爬虫启动时执行。
 
         仅获取或创建索引，不做属性配置。
         索引配置应在部署时通过 ``setup_index`` 完成。
@@ -250,8 +248,7 @@ class MeilisearchPipeline:
                 self.index = None
 
     def process_item(self, item: Any, spider: Spider) -> Any:
-        """
-        处理每个 Item。
+        """处理每个 Item。
 
         将数据写入内部缓冲区，满批后触发刷新。
         若检测到 ID 冲突（SHA-256 前 16 位极小概率事件），
@@ -272,7 +269,7 @@ class MeilisearchPipeline:
         doc_id = self._generate_doc_id(url)
         doc_id = self._resolve_id_conflict(doc_id, url, spider)
 
-        doc: Dict[str, Any] = {
+        doc: dict[str, Any] = {
             "id": doc_id,
             "url": url,
             "title": item.get("title", "").strip(),
@@ -300,8 +297,7 @@ class MeilisearchPipeline:
         return item
 
     def close_spider(self, spider: Spider) -> None:
-        """
-        爬虫关闭时执行。
+        """爬虫关闭时执行。
 
         推送缓冲区中剩余的数据。
         """
@@ -310,8 +306,7 @@ class MeilisearchPipeline:
         spider.logger.info("Meilisearch Pipeline 关闭")
 
     def _generate_doc_id(self, url: str) -> str:
-        """
-        生成文档唯一 ID。
+        """生成文档唯一 ID。
 
         使用 SHA-256 前 16 位（64 位十六进制），
         对于 1 亿条文档冲突概率约 10^-9，工程上可接受。
@@ -326,8 +321,7 @@ class MeilisearchPipeline:
         return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
 
     def _resolve_id_conflict(self, doc_id: str, url: str, spider: Spider) -> str:
-        """
-        检测并解决文档 ID 冲突。
+        """检测并解决文档 ID 冲突。
 
         若 Meilisearch 中已存在相同 ID 但 URL 不同，
         追加额外哈希片段生成唯一 ID。
@@ -354,8 +348,7 @@ class MeilisearchPipeline:
         return doc_id
 
     def _flush_items(self, spider: Spider) -> None:
-        """
-        将缓冲区中的文档批量推送到 Meilisearch。
+        """将缓冲区中的文档批量推送到 Meilisearch。
 
         采用指数退避重试机制（最多 ``MAX_RETRIES`` 次）。
         全部失败后丢弃该批次并清空缓冲区，避免阻塞后续爬取。
@@ -363,7 +356,7 @@ class MeilisearchPipeline:
         if not self.items_buffer:
             return
 
-        last_exception: Optional[Exception] = None
+        last_exception: Exception | None = None
 
         for attempt in range(1, self.MAX_RETRIES + 1):
             try:
@@ -395,8 +388,7 @@ class MeilisearchPipeline:
 
 
 class TrafilaturaPipeline:
-    """
-    Trafilatura 正文提取 Pipeline（占位）。
+    """Trafilatura 正文提取 Pipeline（占位）。
 
     当前项目中正文提取在 ``TransSpider`` 中完成，
     本 Pipeline 仅透传 Item。
@@ -404,7 +396,7 @@ class TrafilaturaPipeline:
 
     def __init__(self) -> None:
         """初始化。"""
-        self.items_buffer: List[Any] = []
+        self.items_buffer: list[Any] = []
         self.batch_size: int = 50
 
     @classmethod

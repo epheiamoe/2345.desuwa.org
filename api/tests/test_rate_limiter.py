@@ -1,11 +1,10 @@
 """Tests for rate limiter."""
 
 import time
-from unittest.mock import MagicMock
 
 import pytest
 
-from api.rate_limiter import RateLimitError, RateLimiter
+from api.rate_limiter import RateLimiter
 
 
 class MockDatabase:

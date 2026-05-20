@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """输入验证器模块
 
 提供搜索参数、API Key、域名等的验证功能。
@@ -13,7 +12,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Optional, Set, Tuple
+from typing import Any
 
 try:
     from api.config import config
@@ -104,7 +103,7 @@ class InputValidator:
     }
 
     @classmethod
-    def _get_valid_tags(cls) -> Set[str]:
+    def _get_valid_tags(cls) -> set[str]:
         """获取有效的标签集合
 
         优先从 config.json 加载，如果失败则使用默认列表。
@@ -122,7 +121,7 @@ class InputValidator:
         return cls.DEFAULT_TAGS
 
     @classmethod
-    def _get_supported_languages(cls) -> Set[str]:
+    def _get_supported_languages(cls) -> set[str]:
         """获取支持的语言代码集合
 
         优先从 config.json 加载，如果失败则使用默认列表。
@@ -194,10 +193,10 @@ class InputValidator:
         """
         try:
             limit = int(limit)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as err:
             raise ValidationError(
                 f"Limit must be an integer, got {type(limit).__name__}"
-            )
+            ) from err
 
         if limit < 1:
             raise ValidationError("Limit must be at least 1")
@@ -224,10 +223,10 @@ class InputValidator:
         """
         try:
             offset = int(offset)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as err:
             raise ValidationError(
                 f"Offset must be an integer, got {type(offset).__name__}"
-            )
+            ) from err
 
         if offset < 0:
             raise ValidationError("Offset cannot be negative")
@@ -370,9 +369,9 @@ def validate_search_params(
     q: Any,
     limit: Any = 10,
     offset: Any = 0,
-    tag: Optional[Any] = None,
-    site: Optional[Any] = None,
-) -> Tuple[str, int, int, Optional[str], Optional[str]]:
+    tag: Any | None = None,
+    site: Any | None = None,
+) -> tuple[str, int, int, str | None, str | None]:
     """验证并返回所有搜索参数
 
     便捷函数，一次性验证所有搜索相关参数。

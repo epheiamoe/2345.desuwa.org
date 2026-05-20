@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-数据库迁移脚本
+"""数据库迁移脚本
 
 从 db.json 迁移到 SQLite，支持回滚。
 
@@ -15,12 +13,11 @@
 
 import argparse
 import json
-import os
 import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class DatabaseMigrationError(Exception):
@@ -30,15 +27,13 @@ class DatabaseMigrationError(Exception):
 
 
 class DatabaseMigrator:
-    """
-    数据库迁移器
+    """数据库迁移器
 
     负责从 JSON 文件迁移到 SQLite 数据库，支持回滚操作。
     """
 
     def __init__(self, source_path: str, target_path: str):
-        """
-        初始化迁移器
+        """初始化迁移器
 
         Args:
             source_path: 源 JSON 文件路径
@@ -51,9 +46,8 @@ class DatabaseMigrator:
         )
         self.migrated = False
 
-    def _load_json(self) -> Dict[str, Any]:
-        """
-        加载 JSON 数据
+    def _load_json(self) -> dict[str, Any]:
+        """加载 JSON 数据
 
         Returns:
             JSON 数据字典
@@ -65,16 +59,15 @@ class DatabaseMigrator:
             raise DatabaseMigrationError(f"源文件不存在: {self.source_path}")
 
         try:
-            with open(self.source_path, "r", encoding="utf-8") as f:
+            with open(self.source_path, encoding="utf-8") as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
-            raise DatabaseMigrationError(f"JSON 解析失败: {e}")
+            raise DatabaseMigrationError(f"JSON 解析失败: {e}") from e
         except Exception as e:
-            raise DatabaseMigrationError(f"读取源文件失败: {e}")
+            raise DatabaseMigrationError(f"读取源文件失败: {e}") from e
 
     def _init_sqlite(self) -> sqlite3.Connection:
-        """
-        初始化 SQLite 数据库
+        """初始化 SQLite 数据库
 
         Returns:
             数据库连接
@@ -139,9 +132,8 @@ class DatabaseMigrator:
 
         return conn
 
-    def _migrate_users(self, conn: sqlite3.Connection, data: Dict[str, Any]) -> int:
-        """
-        迁移用户数据
+    def _migrate_users(self, conn: sqlite3.Connection, data: dict[str, Any]) -> int:
+        """迁移用户数据
 
         Args:
             conn: 数据库连接
@@ -181,9 +173,8 @@ class DatabaseMigrator:
 
         return count
 
-    def _migrate_api_keys(self, conn: sqlite3.Connection, data: Dict[str, Any]) -> int:
-        """
-        迁移 API Keys
+    def _migrate_api_keys(self, conn: sqlite3.Connection, data: dict[str, Any]) -> int:
+        """迁移 API Keys
 
         Args:
             conn: 数据库连接
@@ -212,8 +203,7 @@ class DatabaseMigrator:
         return count
 
     def migrate(self) -> None:
-        """
-        执行迁移
+        """执行迁移
 
         Raises:
             DatabaseMigrationError: 迁移失败
@@ -222,7 +212,7 @@ class DatabaseMigrator:
 
         # 加载 JSON 数据
         data = self._load_json()
-        print(f"已加载 JSON 数据")
+        print("已加载 JSON 数据")
 
         # 如果目标数据库已存在，创建备份
         if self.target_path.exists():
@@ -246,24 +236,23 @@ class DatabaseMigrator:
             conn.commit()
             self.migrated = True
 
-            print(f"迁移完成!")
+            print("迁移完成!")
             print(f"  - 用户: {user_count}")
             print(f"  - API Keys: {key_count}")
 
         except Exception as e:
             conn.rollback()
-            raise DatabaseMigrationError(f"迁移失败: {e}")
+            raise DatabaseMigrationError(f"迁移失败: {e}") from e
         finally:
             conn.close()
 
     def rollback(self) -> None:
-        """
-        执行回滚
+        """执行回滚
 
         Raises:
             DatabaseMigrationError: 回滚失败
         """
-        print(f"开始回滚...")
+        print("开始回滚...")
 
         # 查找最近的备份
         backups = sorted(
@@ -294,7 +283,7 @@ class DatabaseMigrator:
             print("回滚完成")
 
         except Exception as e:
-            raise DatabaseMigrationError(f"回滚失败: {e}")
+            raise DatabaseMigrationError(f"回滚失败: {e}") from e
 
 
 def main():

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """配置加载器模块
 
 负责加载环境变量(.env)和共享配置(config.json)，
@@ -16,7 +15,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 __version__ = "1.0.0"
 __author__ = "TransSearch Team"
@@ -52,7 +51,7 @@ class Config:
     ]
 
     def __init__(
-        self, env_file: Optional[str] = None, config_path: Optional[str] = None
+        self, env_file: str | None = None, config_path: str | None = None
     ) -> None:
         """初始化配置加载器
 
@@ -67,7 +66,7 @@ class Config:
         self.shared = self._load_shared(config_path)
         self._validate_required_vars()
 
-    def _load_env(self, env_file: Optional[str] = None) -> Dict[str, str]:
+    def _load_env(self, env_file: str | None = None) -> dict[str, str]:
         """加载环境变量
 
         首先尝试从 .env 文件加载，然后合并系统环境变量。
@@ -89,7 +88,7 @@ class Config:
                 "python-dotenv not installed, "
                 "only system environment variables will be used"
             )
-            return {k: v for k, v in os.environ.items()}
+            return dict(os.environ.items())
 
         if env_file is None:
             env_file = Path(__file__).parent.parent / ".env"
@@ -106,9 +105,9 @@ class Config:
         except OSError as exc:
             raise ConfigError(f"Cannot read env file: {env_file} - {exc}") from exc
 
-        return {k: v for k, v in os.environ.items()}
+        return dict(os.environ.items())
 
-    def _load_shared(self, config_path: Optional[str] = None) -> Dict[str, Any]:
+    def _load_shared(self, config_path: str | None = None) -> dict[str, Any]:
         """加载共享配置(config.json)
 
         Args:
@@ -132,7 +131,7 @@ class Config:
             )
 
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 content = f.read()
         except PermissionError as exc:
             raise ConfigError(
@@ -255,7 +254,7 @@ class Config:
         return f"{protocol}://{host}:{port}"
 
     @property
-    def rate_limits(self) -> Dict[str, int]:
+    def rate_limits(self) -> dict[str, int]:
         """获取速率限制配置
 
         优先级：环境变量 > config.json > 默认值

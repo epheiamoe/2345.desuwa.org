@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-跨性别资源搜索引擎爬虫 Spider
+"""跨性别资源搜索引擎爬虫 Spider
 
 从 2345.lgbt 收录的网站爬取内容。
 """
 
 import os
 import sys
-from typing import Any, Generator, Tuple
+from collections.abc import Generator
+from typing import Any
 
 import scrapy
 import trafilatura
@@ -24,9 +23,8 @@ from transspider.items import TransResourceItem
 from transspider.utils import is_valid_url, normalize_url
 
 
-def load_domain_tags() -> Tuple[dict, set]:
-    """
-    从 ``domains.json`` 加载域名对应的标签和 ``no_follow`` 标记。
+def load_domain_tags() -> tuple[dict, set]:
+    """从 ``domains.json`` 加载域名对应的标签和 ``no_follow`` 标记。
 
     Returns:
         ``(tags_map, no_follow_domains)`` 元组。
@@ -51,8 +49,7 @@ def load_domain_tags() -> Tuple[dict, set]:
 
 
 class TransSpider(scrapy.Spider):
-    """
-    跨性别资源爬虫。
+    """跨性别资源爬虫。
 
     特性：
     - 只爬取 ``allowed_domains`` 中定义的域名
@@ -74,8 +71,7 @@ class TransSpider(scrapy.Spider):
         self.max_pages = 10000
 
     def parse(self, response: Response) -> Generator:
-        """
-        解析页面主入口。
+        """解析页面主入口。
 
         执行流程：
         1. 检查全局页面数上限；
@@ -110,8 +106,7 @@ class TransSpider(scrapy.Spider):
             yield from self._extract_link_requests(response)
 
     def _is_text_response(self, response: Response) -> bool:
-        """
-        判断响应是否为可处理的文本类型。
+        """判断响应是否为可处理的文本类型。
 
         Args:
             response: Scrapy Response 对象。
@@ -132,8 +127,7 @@ class TransSpider(scrapy.Spider):
         return True
 
     def _extract_content(self, response: Response) -> str:
-        """
-        使用 trafilatura 提取页面正文。
+        """使用 trafilatura 提取页面正文。
 
         Args:
             response: Scrapy Response 对象。
@@ -154,8 +148,7 @@ class TransSpider(scrapy.Spider):
             return ""
 
     def _build_item(self, response: Response, content: str) -> TransResourceItem | None:
-        """
-        根据响应与正文构建 ``TransResourceItem``。
+        """根据响应与正文构建 ``TransResourceItem``。
 
         Args:
             response: Scrapy Response 对象。
@@ -186,8 +179,7 @@ class TransSpider(scrapy.Spider):
         return item
 
     def _should_follow(self, response: Response) -> bool:
-        """
-        判断当前页面是否需要继续提取链接跟进。
+        """判断当前页面是否需要继续提取链接跟进。
 
         Args:
             response: Scrapy Response 对象。
@@ -199,8 +191,7 @@ class TransSpider(scrapy.Spider):
         return domain not in self.no_follow_domains and self.page_count < self.max_pages
 
     def _extract_link_requests(self, response: Response) -> Generator:
-        """
-        从页面中提取同域名链接并生成 ``scrapy.Request``。
+        """从页面中提取同域名链接并生成 ``scrapy.Request``。
 
         所有链接会先经 ``normalize_url`` 规范化，再经 ``is_valid_url`` 校验。
         URL 去重完全交由 Scrapy 内置的 ``RFPDupeFilter`` 处理，
@@ -232,8 +223,7 @@ class TransSpider(scrapy.Spider):
 
     @staticmethod
     def _extract_domain(url: str) -> str:
-        """
-        从 URL 中提取域名并去除 ``www.`` 前缀。
+        """从 URL 中提取域名并去除 ``www.`` 前缀。
 
         Args:
             url: 页面 URL。

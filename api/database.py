@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """SQLite 数据库抽象层
 
 使用 SQLite WAL 模式提供并发安全的读写能力，
@@ -15,11 +14,10 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 __version__ = "1.0.0"
 __author__ = "TransSearch Team"
@@ -91,7 +89,7 @@ class Database:
         db_path (Path): 数据库文件路径
     """
 
-    def __init__(self, db_path: Optional[str] = None) -> None:
+    def __init__(self, db_path: str | None = None) -> None:
         """初始化数据库连接
 
         Args:
@@ -171,7 +169,7 @@ class Database:
 
     # === API Key 管理 ===
 
-    def get_api_key(self, key: str) -> Optional[Dict[str, Any]]:
+    def get_api_key(self, key: str) -> dict[str, Any] | None:
         """获取 API Key 信息
 
         Args:
@@ -191,7 +189,7 @@ class Database:
         except sqlite3.Error as exc:
             raise DatabaseError(f"Failed to get API key: {exc}") from exc
 
-    def get_user_by_github_id(self, github_id: str) -> Optional[Dict[str, Any]]:
+    def get_user_by_github_id(self, github_id: str) -> dict[str, Any] | None:
         """通过 GitHub ID 获取用户信息
 
         Args:
@@ -213,7 +211,7 @@ class Database:
         except sqlite3.Error as exc:
             raise DatabaseError(f"Failed to get user by github id: {exc}") from exc
 
-    def create_api_key(self, key: str, user_data: Dict[str, Any]) -> None:
+    def create_api_key(self, key: str, user_data: dict[str, Any]) -> None:
         """创建新的 API Key
 
         Args:
@@ -228,8 +226,10 @@ class Database:
             with self._get_connection() as conn:
                 conn.execute(
                     """
-                    INSERT INTO api_keys
-                    (key, github_id, github_login, email, avatar_url, is_admin, credits, credits_used)
+                    INSERT INTO api_keys (
+                        key, github_id, github_login, email,
+                        avatar_url, is_admin, credits, credits_used
+                    )
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                     (
@@ -248,7 +248,7 @@ class Database:
         except sqlite3.Error as exc:
             raise DatabaseError(f"Failed to create API key: {exc}") from exc
 
-    def update_api_key(self, key: str, data: Dict[str, Any]) -> bool:
+    def update_api_key(self, key: str, data: dict[str, Any]) -> bool:
         """更新 API Key 信息
 
         只允许更新白名单中的字段，防止意外修改敏感数据。
@@ -281,7 +281,7 @@ class Database:
 
         try:
             with self._get_connection() as conn:
-                set_clause = ", ".join(f"{k} = ?" for k in updates.keys())
+                set_clause = ", ".join(f"{k} = ?" for k in updates)
                 values = list(updates.values()) + [key]
 
                 cursor = conn.execute(
@@ -313,7 +313,7 @@ class Database:
         except sqlite3.Error as exc:
             raise DatabaseError(f"Failed to delete API key: {exc}") from exc
 
-    def list_api_keys(self) -> List[Dict[str, Any]]:
+    def list_api_keys(self) -> list[dict[str, Any]]:
         """列出所有 API Keys
 
         Returns:
@@ -331,7 +331,7 @@ class Database:
 
     # === 速率限制 ===
 
-    def get_rate_limit(self, key: str) -> Optional[Dict[str, Any]]:
+    def get_rate_limit(self, key: str) -> dict[str, Any] | None:
         """获取速率限制状态
 
         Args:
@@ -351,7 +351,7 @@ class Database:
         except sqlite3.Error as exc:
             raise DatabaseError(f"Failed to get rate limit: {exc}") from exc
 
-    def update_rate_limit(self, key: str, counters: Dict[str, Any]) -> None:
+    def update_rate_limit(self, key: str, counters: dict[str, Any]) -> None:
         """更新速率限制计数器
 
         使用 INSERT OR REPLACE 语义，不存在则插入，存在则更新。
@@ -439,7 +439,7 @@ class Database:
             return 0
 
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError as exc:
             raise DatabaseError(f"Invalid JSON in migration source: {exc}") from exc
@@ -448,12 +448,12 @@ class Database:
 
         migrated_count = 0
         users = data.get("users", {})
-        keys = data.get("keys", {})
+        data.get("keys", {})
 
         try:
             with self._get_connection() as conn:
                 # 迁移用户数据
-                for github_id, user_data in users.items():
+                for _github_id, user_data in users.items():
                     api_key = user_data.get("api_key")
                     if not api_key:
                         continue
@@ -461,8 +461,11 @@ class Database:
                     try:
                         conn.execute(
                             """
-                            INSERT OR IGNORE INTO api_keys
-                            (key, github_id, github_login, email, avatar_url, is_admin, is_banned, credits, credits_used, created_at)
+                            INSERT OR IGNORE INTO api_keys (
+                                key, github_id, github_login, email,
+                                avatar_url, is_admin, is_banned,
+                                credits, credits_used, created_at
+                            )
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                             (
