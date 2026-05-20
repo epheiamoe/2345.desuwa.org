@@ -1,3 +1,120 @@
+/* CSS 变量系统 - 渐进式重构第 1 步 */
+/* 在 :root 中定义所有设计令牌，后续逐步替换硬编码值 */
+:root {
+    /* 主色调 */
+    --color-primary: #1a73e8;
+    --color-primary-hover: #1557b0;
+    --color-primary-light: #8ab4f8;
+    --color-danger: #d93025;
+    --color-danger-bg: #fce8e6;
+    --color-success: #188038;
+    --color-warning-bg: #fff3cd;
+    --color-warning-text: #856404;
+
+    /* 文本 */
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --text-disabled: #9aa0a6;
+    --text-link: #1a0dab;
+    --text-url: #006621;
+    --text-snippet: #545454;
+
+    /* 背景 */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-hover: #e8eaed;
+    --bg-input: #f1f3f4;
+    --bg-tag: #e8f0fe;
+
+    /* 边框 */
+    --border-color: #dfe1e5;
+    --border-radius-sm: 3px;
+    --border-radius-md: 4px;
+    --border-radius-lg: 8px;
+    --border-radius-xl: 12px;
+    --border-radius-full: 24px;
+
+    /* 间距 */
+    --space-xs: 2px;
+    --space-sm: 4px;
+    --space-md: 8px;
+    --space-lg: 12px;
+    --space-xl: 16px;
+    --space-2xl: 20px;
+    --space-3xl: 24px;
+    --space-4xl: 40px;
+    --space-5xl: 60px;
+
+    /* 字体 */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-md: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+
+    /* 动画 */
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+
+    /* 阴影 */
+    --shadow-sm: 0 1px 6px rgba(32, 33, 36, 0.28);
+    --shadow-md: 0 1px 6px rgba(32, 33, 36, 0.4);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    /* 布局 */
+    --max-width: 800px;
+    --header-padding: 20px 40px;
+    --main-padding: 60px 20px;
+}
+
+/* 暗黑模式（系统偏好） */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-primary: #e8eaed;
+        --text-secondary: #9aa0a6;
+        --text-disabled: #bdc1c6;
+        --text-link: #8ab4f8;
+        --text-url: #9aa0a6;
+        --text-snippet: #bdc1c6;
+
+        --bg-primary: #202124;
+        --bg-secondary: #303134;
+        --bg-hover: #3c4043;
+        --bg-input: #303134;
+        --bg-tag: #303134;
+
+        --border-color: #5f6368;
+        --color-danger-bg: #3c2020;
+        --color-warning-bg: #3c3030;
+        --color-warning-text: #f8b878;
+    }
+}
+
+/* 手动暗黑模式（JS 切换） */
+body.dark {
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --text-disabled: #bdc1c6;
+    --text-link: #8ab4f8;
+    --text-url: #9aa0a6;
+    --text-snippet: #bdc1c6;
+
+    --bg-primary: #202124;
+    --bg-secondary: #303134;
+    --bg-hover: #3c4043;
+    --bg-input: #303134;
+    --bg-tag: #303134;
+
+    --border-color: #5f6368;
+    --color-danger-bg: #3c2020;
+    --color-warning-bg: #3c3030;
+    --color-warning-text: #f8b878;
+}
+
+/* ---- 以下为原样式（保持向后兼容） ---- */
+
 * {
     margin: 0;
     padding: 0;
@@ -5,8 +122,8 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: #fff;
+    font-family: var(--font-family);
+    background: var(--bg-primary);
     color: #333;
     line-height: 1.6;
 }
@@ -318,14 +435,14 @@ body {
         gap: 10px;
         align-items: flex-start;
     }
-    
+
     .nav-links {
         gap: 12px;
         justify-content: flex-start;
         overflow-x: auto;
         max-width: 100%;
     }
-    
+
     .nav-links a {
         white-space: nowrap;
     }
