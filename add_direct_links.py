@@ -13,6 +13,7 @@ import hashlib
 MEILISEARCH_HOST = os.environ.get("MEILISEARCH_HOST", "localhost")
 MEILISEARCH_PORT = os.environ.get("MEILISEARCH_PORT", "7700")
 MEILISEARCH_INDEX = os.environ.get("MEILISEARCH_INDEX", "trans_resources")
+MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_API_KEY", "")
 
 try:
     import meilisearch
@@ -74,13 +75,14 @@ def main():
 
     print(f"添加 {len(documents)} 个直接链接到索引...")
 
-    client = meilisearch.Client(f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}")
+    api_key = MEILISEARCH_API_KEY if MEILISEARCH_API_KEY else None
+    client = meilisearch.Client(
+        f"http://{MEILISEARCH_HOST}:{MEILISEARCH_PORT}", api_key
+    )
     index = client.index(MEILISEARCH_INDEX)
 
     task = index.add_documents(documents)
     print(f"任务已提交: {task.task_uid}")
-
-    client.wait_for_task(task.task_uid)
     print("完成!")
 
 
